@@ -204,9 +204,11 @@ resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024
 }
 
 // Define the Whisper deployment
+// putting dependency on openai deployment just so that they deploy sequentially
 resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   name: azureWhisperDeploymentName
   parent: openai
+  dependsOn: [ openaideployment ]
   sku: {
     name: 'Standard'
     capacity: 3
@@ -223,9 +225,11 @@ resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@202
 }
 
 // Define the OpenAI deployment
+// putting dependency on whisper deployment just so that they deploy sequentially
 resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   name: azureOpenaiAudioDeploymentName
   parent: openai
+  dependsOn: [ whisperDeployment ]
   sku: {
     name: 'GlobalStandard'
     capacity: 80
