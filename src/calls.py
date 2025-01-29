@@ -2,6 +2,19 @@
 import streamlit as st
 from services import azure_storage, azure_transcription
 
+# Custom CSS to reduce button width and add margin
+st.markdown("""
+<style>
+    .stButton > button {
+        width: 100%;
+    }
+    .custom-div {
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
 # ------------------------ MAIN APP LAYOUT ------------------------ #
 
 # Add a sidebar for quick navigation or info
@@ -59,11 +72,26 @@ else:
             else:
                 st.write("Transcript not found.")
 
-            # Delete button
-            if st.button("Delete", key=f"delete_{blob_name}"):
-                outcome = azure_storage.delete_audio(blob_name)
-                azure_storage.delete_transcription(transcript_name)
-                st.success(outcome)
+            # Create two columns with equal width
+            col1, col2 = st.columns(2)
+
+            # Place buttons in each column
+            with col1:
+                st.markdown('<div class="custom-div">', unsafe_allow_html=True)
+                if st.button("Delete", key=f"delete_{blob_name}"):
+                    outcome = azure_storage.delete_audio(blob_name)
+                    azure_storage.delete_transcription(transcript_name)
+                    st.success(outcome)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with col2:
+                st.markdown('<div class="custom-div">', unsafe_allow_html=True)
+                if st.button("Transcribe", key=f"transcribe_{blob_name}"):
+                    transcript = azure_transcription.transcribe_audio(blob_name)
+                    azure_storage.upload_transcription_to_blob(name_only, transcript)
+                    st.success("Transcription completed.")
+                st.markdown('</div>', unsafe_allow_html=True)
+
 
 # Optional: a nice footer or credits
 st.write("")

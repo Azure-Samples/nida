@@ -230,7 +230,24 @@ def read_prompt_config(blob_name):
     except Exception:
         return None
 
+def read_config():
+    """
+    Read the JSON config for transcription models or LLMs ect..
+    """
+    config_blob_name = "app_config.json"
+    try:
+        content = read_blob(config_blob_name, None)
+        return json.loads(content)
+    except Exception:
+        return None
 
+def save_config(config):
+    """
+    Save the JSON config for transcription models or LLMs ect..
+    """
+    config_blob_name = "app_config.json"
+    data_to_upload = json.dumps(config)
+    return upload_blob(data_to_upload, config_blob_name, "")
 # ----------------------------------------------------------------------------
 # LLM Analysis Listing/Reading
 # ----------------------------------------------------------------------------
