@@ -1,0 +1,69 @@
+Date : 2025-01-29 11:14:53
+Directory : c:\Users\mohamedbe\code\nida
+Total : 30 files,  4144 codes, 246 comments, 482 blanks, all 4872 lines
+
+Languages
++------------------+------------+------------+------------+------------+------------+
+| language         | files      | code       | comment    | blank      | total      |
++------------------+------------+------------+------------+------------+------------+
+| Bicep            |          8 |      1,718 |         12 |         63 |      1,793 |
+| Python           |         13 |      1,703 |        225 |        397 |      2,325 |
+| JSON             |          5 |        660 |          0 |          5 |        665 |
+| Markdown         |          1 |         32 |          0 |          8 |         40 |
+| pip requirements |          1 |         13 |          0 |          0 |         13 |
+| YAML             |          1 |         10 |          1 |          2 |         13 |
+| Docker           |          1 |          8 |          8 |          7 |         23 |
++------------------+------------+------------+------------+------------+------------+
+
+Directories
++------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                   | files      | code       | comment    | blank      | total      |
++------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                      |         30 |      4,144 |        246 |        482 |      4,872 |
+| . (Files)                                                              |          5 |        530 |          1 |         13 |        544 |
+| infra                                                                  |         10 |      1,890 |         12 |         65 |      1,967 |
+| infra (Files)                                                          |          3 |        270 |          5 |         16 |        291 |
+| infra\app                                                              |          1 |        268 |          4 |         25 |        297 |
+| infra\modules                                                          |          1 |          6 |          0 |          3 |          9 |
+| infra\shared                                                           |          5 |      1,346 |          3 |         21 |      1,370 |
+| src                                                                    |         15 |      1,724 |        233 |        404 |      2,361 |
+| src (Files)                                                            |         10 |      1,264 |        176 |        263 |      1,703 |
+| src\services                                                           |          5 |        460 |         57 |        141 |        658 |
++------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| filename                                                               | language         | code       | comment    | blank      | total      |
++------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| c:\Users\mohamedbe\code\nida\README.md                                 | Markdown         |         32 |          0 |          8 |         40 |
+| c:\Users\mohamedbe\code\nida\analyze_calls.ipynb                       | JSON             |        314 |          0 |          1 |        315 |
+| c:\Users\mohamedbe\code\nida\azure.yaml                                | YAML             |         10 |          1 |          2 |         13 |
+| c:\Users\mohamedbe\code\nida\create_eval_data.ipynb                    | JSON             |        107 |          0 |          1 |        108 |
+| c:\Users\mohamedbe\code\nida\infra\abbreviations.json                  | JSON             |        135 |          0 |          1 |        136 |
+| c:\Users\mohamedbe\code\nida\infra\app\src.bicep                       | Bicep            |        268 |          4 |         25 |        297 |
+| c:\Users\mohamedbe\code\nida\infra\main.bicep                          | Bicep            |         98 |          5 |         14 |        117 |
+| c:\Users\mohamedbe\code\nida\infra\main.parameters.json                | JSON             |         37 |          0 |          1 |         38 |
+| c:\Users\mohamedbe\code\nida\infra\modules\fetch-container-image.bicep | Bicep            |          6 |          0 |          3 |          9 |
+| c:\Users\mohamedbe\code\nida\infra\shared\apps-env.bicep               | Bicep            |         28 |          0 |          6 |         34 |
+| c:\Users\mohamedbe\code\nida\infra\shared\dashboard-web.bicep          | Bicep            |      1,229 |          1 |          2 |      1,232 |
+| c:\Users\mohamedbe\code\nida\infra\shared\keyvault.bicep               | Bicep            |         26 |          1 |          5 |         32 |
+| c:\Users\mohamedbe\code\nida\infra\shared\monitoring.bicep             | Bicep            |         31 |          0 |          4 |         35 |
+| c:\Users\mohamedbe\code\nida\infra\shared\registry.bicep               | Bicep            |         32 |          1 |          4 |         37 |
+| c:\Users\mohamedbe\code\nida\src\Calls.py                              | Python           |         50 |          8 |         14 |         72 |
+| c:\Users\mohamedbe\code\nida\src\Details.py                            | Python           |        156 |         20 |         34 |        210 |
+| c:\Users\mohamedbe\code\nida\src\Diagnostics.py                        | Python           |        103 |         42 |         36 |        181 |
+| c:\Users\mohamedbe\code\nida\src\Dockerfile                            | Docker           |          8 |          8 |          7 |         23 |
+| c:\Users\mohamedbe\code\nida\src\Main.py                               | Python           |        215 |          0 |         34 |        249 |
+| c:\Users\mohamedbe\code\nida\src\Overall.py                            | Python           |        298 |         29 |         60 |        387 |
+| c:\Users\mohamedbe\code\nida\src\Summary.py                            | Python           |        190 |         27 |         38 |        255 |
+| c:\Users\mohamedbe\code\nida\src\genaianalysis.py                      | Python           |        132 |         28 |         25 |        185 |
+| c:\Users\mohamedbe\code\nida\src\personas.py                           | Python           |         99 |         14 |         15 |        128 |
+| c:\Users\mohamedbe\code\nida\src\requirements.txt                      | pip requirements |         13 |          0 |          0 |         13 |
+| c:\Users\mohamedbe\code\nida\src\services\azure_cosmos.py              | Python           |         55 |         14 |         16 |         85 |
+| c:\Users\mohamedbe\code\nida\src\services\azure_evals.py               | Python           |         62 |         22 |         25 |        109 |
+| c:\Users\mohamedbe\code\nida\src\services\azure_oai.py                 | Python           |         94 |          0 |         29 |        123 |
+| c:\Users\mohamedbe\code\nida\src\services\azure_storage.py             | Python           |        221 |         18 |         62 |        301 |
+| c:\Users\mohamedbe\code\nida\src\services\azure_transcription.py       | Python           |         28 |          3 |          9 |         40 |
+| c:\Users\mohamedbe\code\nida\whisper_oai_transcription.ipynb           | JSON             |         67 |          0 |          1 |         68 |
+| Total                                                                  |                  |      4,144 |        246 |        482 |      4,872 |
++------------------------------------------------------------------------+------------------+------------+------------+------------+------------+

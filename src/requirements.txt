@@ -1,0 +1,13 @@
+openai
+python-dotenv==1.0.1
+azure-identity==1.19.0
+pandas
+azure-storage-blob==12.24.0
+openpyxl==3.1.5
+streamlit==1.41.0
+azure-cognitiveservices-speech==1.41.1
+altair==5.5.0
+datetime==5.5
+wordcloud
+numpy
+matplotlib
