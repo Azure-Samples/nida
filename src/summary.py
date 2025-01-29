@@ -241,9 +241,9 @@ for i, key in enumerate(keys):
             else:
                 st.write("No non-empty string data to display.")
 
-        # Sample of raw values
-        st.write("**Sample Values**:", values[:10], "..." if len(values) > 10 else "")
-        st.write("---")
+            # Sample of raw values
+            st.write("**Sample Values**:", values[:10], "..." if len(values) > 10 else "")
+            st.write("---")
 
 # -------------------------------------------------------------------------
 # Footer
