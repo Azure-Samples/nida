@@ -10,7 +10,7 @@ This project consists of:
 - **src** – Main application code with a Streamlit app.  
   - To run locally, use:  
     ```bash
-    streamlit run Main.py
+    streamlit run main.py
     ```
   - `Main.py` sets up Streamlit configuration, page title, and loads a logo.
   - Other Python files (e.g., `transcriptions.py`) import services like `azure_storage` and `azure_transcription`.

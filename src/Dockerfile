@@ -19,4 +19,4 @@ EXPOSE 80
 #go inside the app folder
 WORKDIR /main
 # Run Streamlit on container start
-CMD streamlit run Main.py --server.port=80 --server.address=0.0.0.0
+CMD streamlit run main.py --server.port=80 --server.address=0.0.0.0
