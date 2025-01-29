@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Operational effeciency Dashboard",
+    page_title="Nida, understand your calls",
     layout="wide",
     initial_sidebar_state="expanded"
 )
