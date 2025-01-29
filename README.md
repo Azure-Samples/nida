@@ -1,57 +1,40 @@
-# Project Name
+<!-- filepath: ./README.md -->
+# README
 
-(short, 1-3 sentenced, description of the project)
+## Overview
+This project consists of:
+- **Infra** – Bicep files for Azure infrastructure deployments.  
+  - `src.bicep` is the main file to modify.
+  - Refer to `azure.yaml` for basic service definitions, such as container app settings, Dockerfiles, and any optional resource group info (commented).
 
-## Features
+- **src** – Main application code with a Streamlit app.  
+  - To run locally, use:  
+    ```bash
+    streamlit run Main.py
+    ```
+  - `Main.py` sets up Streamlit configuration, page title, and loads a logo.
+  - Other Python files (e.g., `transcriptions.py`) import services like `azure_storage` and `azure_transcription`.
 
-This project framework provides the following features:
+- **misc** – Additional supporting files needing updates as the project evolves.
 
-* Feature 1
-* Feature 2
-* ...
+## Environment Variables
+A sample file (`.env.sample`) shows how to configure:
+- **Azure OpenAI** settings (keys, endpoints, versions).
+- **Storage** settings (account name, container, audio folder).
+- **Cosmos DB** container configuration.
+- **Optional** endpoints for other Azure services.
+
+Edit or rename `.env.sample` to `.env` and populate the correct values before running or deploying.
+
+## Infrastructure & Deployment
+- Bicep scripts (`src.bicep`) define Azure resources. Update these as needed for resource provisioning.
+- [azure.yaml](http://_vscodecontentref_/0) can help manage services and infra via Azure Developer CLI (e.g., container app deployment, region info).
+- A `Dockerfile` (referenced in [azure.yaml](http://_vscodecontentref_/1)) is used for building and deploying the Streamlit service.
 
 ## Getting Started
+1. Clone the repo and install dependencies.
+2. Create or update `.env` with valid keys and endpoints.
+3. Deploy infrastructure using Bicep and any CLI commands required.
+4. Build and run the container (or run locally using Streamlit).
 
-### Prerequisites
-
-(ideally very short, if any)
-
-- OS
-- Library version
-- ...
-
-### Installation
-
-(ideally very short)
-
-- npm install [package name]
-- mvn install
-- ...
-
-### Quickstart
-(Add steps to get up and running quickly)
-
-1. git clone [repository clone url]
-2. cd [repository name]
-3. ...
-
-
-## Demo
-
-A demo app is included to show how to use the project.
-
-To run the demo, follow these steps:
-
-(Add steps to start up the demo)
-
-1.
-2.
-3.
-
-## Resources
-
-(Any additional resources or related projects)
-
-- Link to supporting information
-- Link to similar sample
-- ...
+Customize these steps based on your workflow and Azure environment requirements.
