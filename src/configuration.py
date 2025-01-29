@@ -40,17 +40,21 @@ load_dotenv()
 
 # Read the environment variables
 default_whisper = os.getenv("AZURE_WHISPER_MODEL")    # Must be set
-default_audio   = os.getenv("AZURE_AUDIO_MODEL", "notfound")   # Optional
+default_audio   = os.getenv("AZURE_AUDIO_MODEL", "")   # Optional
 
 # We'll provide two “display” options in the dropdown
 model_options = [default_whisper]
 
-if default_audio != "notfound":
+if default_audio != "":
     model_options.append(default_audio)
 
 if config_data and "Transcription" in config_data:
     current_selection = config_data["Transcription"]
 else:
+    current_selection = default_whisper
+
+#check if the current selection is in the model options
+if current_selection not in model_options:
     current_selection = default_whisper
 
 # 4. Render the selectbox with the final "current_selection" as default

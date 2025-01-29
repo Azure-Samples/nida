@@ -15,7 +15,7 @@ def check_azure_openai():
     try:
         # Set up environment-based credentials for Azure OpenAI
         AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-        AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2023-05-15")  # Provide a default if needed
+        AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-11-01-preview")  # Provide a default if needed
 
         AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
@@ -114,6 +114,7 @@ def check_local_config():
         "AZURE_OPENAI_ENDPOINT",
         "STORAGE_ACCOUNT_NAME",
         "DEFAULT_CONTAINER",
+        "AZURE_WHISPER_MODEL"
     ]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:

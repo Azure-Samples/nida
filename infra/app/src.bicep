@@ -11,6 +11,7 @@ param exists bool
 param azureOpenaiResourceName string = 'nida' 
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
+param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
 
 @description('Custom subdomain name for the OpenAI resource (must be unique in the region)')
 param customSubDomainName string
@@ -148,6 +149,10 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
               name: 'AZURE_WHISPER_MODEL'
               value: whisperDeployment.name
             }
+            {
+              name: 'AZURE_AUDIO_MODEL'
+              value: audioDeployment.name
+            }
           ],
           env,
           map(secrets, secret => {
@@ -198,7 +203,7 @@ resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024
   }
 }
 
-// Define the OpenAI deployment
+// Define the Whisper deployment
 resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   name: azureWhisperDeploymentName
   parent: openai
@@ -216,6 +221,25 @@ resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@202
     // The rest depends on your configuration or scale settings
   }
 }
+
+// Define the OpenAI deployment
+resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+  name: azureOpenaiAudioDeploymentName
+  parent: openai
+  sku: {
+    name: 'GlobalStandard'
+    capacity: 80
+  }
+  properties: {
+    model: {
+      name: 'gpt-4o-audio-preview'
+      format: 'OpenAI'
+      version: '2024-12-17'
+    }
+    versionUpgradeOption: 'OnceCurrentVersionExpired'
+  }
+}
+
 
 resource dynamicsession 'Microsoft.App/sessionPools@2024-02-02-preview' = {
   name: 'sessionPool'
