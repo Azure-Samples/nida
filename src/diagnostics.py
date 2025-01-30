@@ -59,7 +59,7 @@ def check_azure_blob():
     """
     try:
         storage_account_name = os.getenv("STORAGE_ACCOUNT_NAME")
-        default_container = os.getenv("DEFAULT_CONTAINER")
+        default_container = os.getenv("DEFAULT_CONTAINER", "default")
         # Use DefaultAzureCredential for authentication
 
         credential = DefaultAzureCredential()
