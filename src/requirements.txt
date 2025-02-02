@@ -11,3 +11,4 @@ datetime==5.5
 wordcloud
 numpy
 matplotlib
+azure-search-documents
