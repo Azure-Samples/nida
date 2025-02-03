@@ -140,6 +140,26 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+def is_valid_analysis(data):
+    """
+    Returns True if the analysis data seems valid, False otherwise.
+    Adjust the conditions based on your quality criteria.
+    """
+    # Example check: if the summary explicitly indicates no transcript was provided.
+    summary = data.get("summary", "")
+    if isinstance(summary, str) and "no transcript" in summary.lower():
+        return False
+
+    # Check sentiment: if Score is None, it might indicate invalid data.
+    sentiment = data.get("sentiment", {})
+    if sentiment.get("Score") is None:
+        return False
+
+    # Optionally, check if main_issues and resolution are both empty/null.
+    if data.get("main_issues") is None and data.get("resolution") is None:
+        return False
+
+    return True
 # --- Title and Intro ---
 st.title("🎯 Summary of Call Analysis")
 
@@ -161,7 +181,9 @@ if llm_analysis:
     for file in llm_analysis:
         try:
             data = azure_storage.read_llm_analysis(selected_prompt_txt, file)
-            all_jsons.append(data)
+            if is_valid_analysis(data):
+                all_jsons.append(data)
+            
         except Exception as e:
             st.error(f"Error reading {file}: {e}")
 
@@ -185,6 +207,7 @@ for i, key in enumerate(keys):
         numeric_values = [v for v in values if is_numeric(v)]
         bool_candidates = [v for v in values if can_be_boolean(v)]
 
+        #print(f"values : {values} vs numeric_values : {numeric_values} vs bool_candidates : {bool_candidates}")
         # 1) All numeric?
         if len(numeric_values) == len(values):
             arr = np.array(numeric_values, dtype=float)
@@ -219,6 +242,9 @@ for i, key in enumerate(keys):
         # 3) Otherwise, treat as text
         else:
             text_data = " ".join([to_string(v) for v in values if v is not None])
+            # print("printin text data")
+            # print(text_data)
+            # print("end text dataa")
             if text_data.strip():
                 wordcloud = WordCloud(
                     width=400, height=200,
