@@ -182,3 +182,22 @@ def get_embedding(query_text):
     )
 
     return response.data[0].embedding
+
+def chat_with_oai(messages, deployment=AZURE_OPENAI_DEPLOYMENT_NAME):
+
+    oai_client = AzureOpenAI(
+        api_version= AZURE_OPENAI_API_VERSION,
+        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
+        azure_ad_token_provider=token_provider
+        )
+   
+    completion = oai_client.chat.completions.create(
+        messages=messages,
+        model=deployment,   
+        temperature=0.2,
+        top_p=1,
+        max_tokens=5000,
+        stop=None,
+    )  
+
+    return clean_json_string(completion.choices[0].message.content)

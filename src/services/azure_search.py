@@ -1,8 +1,9 @@
 import os
-import azure_oai
+from services import azure_oai
 import json
 from dotenv import load_dotenv
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from azure.identity import DefaultAzureCredential
+import re
 
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
@@ -61,6 +62,13 @@ def flatten_json(nested_json, parent_key="", sep="."):
             items.append((new_key, v))
     return dict(items)
 
+def normalize_field_name(name: str) -> str:
+    # Replace any character that is not a letter, digit, or underscore with an underscore.
+    normalized = re.sub(r'[^A-Za-z0-9_]', '_', name)
+    # Ensure the field name starts with a letter; if not, prefix it with "f_"
+    if not re.match(r'^[A-Za-z]', normalized):
+        normalized = "f_" + normalized
+    return normalized
 
 def infer_field_type(value):
     """
@@ -88,13 +96,14 @@ def build_dynamic_fields_from_json(flattened_json):
     # We will create a "dynamic" definition for each field we find.
     # We'll treat strings as `SearchableField` and numeric/bool as `SimpleField`.
     for k, v in flattened_json.items():
+        normalized_key = normalize_field_name(k)
         field_type = infer_field_type(v)
         # If it's a string type, we can make it a 'SearchableField'
         if field_type == SearchFieldDataType.String:
-            fields.append(SearchableField(name=k, type=field_type))
+            fields.append(SearchableField(name=normalized_key, type=field_type))
         else:
             # numeric or boolean
-            fields.append(SimpleField(name=k, type=field_type, filterable=True, sortable=True))
+            fields.append(SimpleField(name=normalized_key, type=field_type, filterable=True, sortable=True))
     return fields
 
 
@@ -221,8 +230,15 @@ def load_json_into_azure_search(index_name, json_docs):
             "contentVector": embedding_vector
         }
         # Add flattened fields
+        # Add flattened fields using normalized keys
         for k, v in flattened.items():
-            final_doc[k] = v
+            normalized_key = normalize_field_name(k)
+            # If the value is a list, join it into a string
+            if isinstance(v, list):
+                final_doc[normalized_key] = " ".join(map(str, v))
+            else:
+                final_doc[normalized_key] = v
+
 
         actions.append(final_doc)
 
@@ -233,6 +249,43 @@ def load_json_into_azure_search(index_name, json_docs):
     except Exception as e:
         print(f"Failed to upload documents: {e}")
 
+def search_query(index_name, query):
+    """
+    Search Azure Search index with a query string.
+    """
+    search_client = SearchClient(
+        endpoint=AZURE_SEARCH_ENDPOINT, 
+        index_name=index_name,
+        credential=azure_credentials
+    )
+
+    try:
+        query_vector = azure_oai.get_embedding(query)
+
+        # Execute a vector search with semantic ranking enabled.
+        results = search_client.search(
+            search_text="",
+            vector_queries=[{"vector": query_vector, "fields": "contentVector", "k": 5,  "kind": "vector"}],
+            query_type="semantic"
+        )
+        return list(results)
+    except Exception as e:
+        print(f"Search failed: {e}")
+        return []
+    
+def index_exists(index_name):
+    """
+    Check if an index exists in Azure Search.
+    """
+    search_index_client = SearchIndexClient(
+        endpoint=AZURE_SEARCH_ENDPOINT, 
+        credential=azure_credentials
+    )
+    try:
+        index = search_index_client.get_index(index_name)
+        return index is not None
+    except Exception as e:
+        return False
 # ------------------------------------------------------------------------------
 # 7) Example Usage
 # ------------------------------------------------------------------------------

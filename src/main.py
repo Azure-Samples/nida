@@ -243,6 +243,7 @@ pg = st.navigation([
     st.Page("genaianalysis.py", title="GenAI Analysis", icon="⚙️"),
     st.Page("summary.py", title="Summary", icon="📈"),
     st.Page("details.py", title="Details", icon="📊"),
+    st.Page("chat.py", title="Chat With your Calls", icon="💬"),
     st.Page("configuration.py", title="Configuration", icon="⚙️"),
     st.Page("diagnostics.py", title="Diagnostics", icon="🔍"),
 ])
