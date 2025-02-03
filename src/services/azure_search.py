@@ -28,7 +28,10 @@ azure_credentials = DefaultAzureCredential()
 # ------------------------------------------------------------------------------
 # 1) Environment Variables / Constants
 # ------------------------------------------------------------------------------
-AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT", "")
+AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT")
+if not AZURE_SEARCH_ENDPOINT:
+    raise ValueError("Please provide a valid Azure Search endpoint.")
+
 AZURE_INDEX_NAME = os.getenv("AZURE_INDEX_NAME", "my-index")
 
 # ------------------------------------------------------------------------------

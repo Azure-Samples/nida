@@ -10,9 +10,12 @@ load_dotenv()
 
 token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")    
 
+AZURE_OPENAI_ENDPOINT=os.getenv("AZURE_OPENAI_ENDPOINT")
+if not AZURE_OPENAI_ENDPOINT:
+    raise ValueError("AZURE_OPENAI_ENDPOINT is not set.")
+
 
 AZURE_OPENAI_DEPLOYMENT_NAME=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
-AZURE_OPENAI_ENDPOINT=os.environ["AZURE_OPENAI_ENDPOINT"]
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-11-01-preview")
 
 AZURE_WHISPER_MODEL=os.environ["AZURE_WHISPER_MODEL"]

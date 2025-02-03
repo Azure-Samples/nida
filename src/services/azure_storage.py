@@ -9,6 +9,9 @@ load_dotenv()
 
 # Environment / configuration
 STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
+if not STORAGE_ACCOUNT_NAME:
+    raise ValueError("Missing STORAGE_ACCOUNT_NAME in environment variables.")
+
 DEFAULT_CONTAINER = os.getenv("DEFAULT_CONTAINER", "mainproject")
 AUDIO_FOLDER = os.getenv("AUDIO_FOLDER", "audios")
 TRANSCRIPTION_FOLDER = os.getenv("TRANSCRIPTION_FOLDER", "transcriptions")

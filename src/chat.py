@@ -1,5 +1,18 @@
 import streamlit as st
-from services import azure_storage, azure_search, azure_oai
+
+try:
+    from services import azure_storage, azure_search, azure_oai
+except ValueError as e:
+    st.markdown(f"""
+    <div style="border: 1px solid #ff4d4f; padding: 10px; border-radius: 5px; background-color: var(--color-bg-primary)">
+      <h4 style="margin: 0;">⚠️ Missing Environment Variables</h4>
+      <p style="margin: 5px 0 0;">Please set the required ENV variables before running the application.</p>
+      <p style="font-style: italic; margin: 5px 0 0;">Error details: <code>{e}</code></p>
+    </div>
+    """, unsafe_allow_html=True)
+    # Optionally, stop further execution:
+    st.stop()
+
 
 
 def build_system_prompt(persona, provided_context):
@@ -61,7 +74,7 @@ def load_llm_analysis(prompt_file):
 
 
 # ---------------- Sidebar: Prompt Selection and Index Creation ----------------
-st.header("👤 Person Setup for Search")
+st.header("👤 Persona Setup for Search")
 
 # List all persona (.txt) files available in the container.
 all_prompt_files = azure_storage.list_prompts()

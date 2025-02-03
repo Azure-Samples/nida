@@ -4,6 +4,7 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AzureOpenAI
 from azure.storage.blob import BlobServiceClient
 from azure.identity import DefaultAzureCredential
+from services import azure_search
 
 token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")    
 
@@ -79,33 +80,6 @@ def check_azure_blob():
     except Exception as e:
         return False, f"Error connecting to Azure Blob Storage: {str(e)}"
 
-
-# Example for Cosmos DB check (uncomment and adjust credentials as needed)
-# def check_azure_cosmos():
-#     """
-#     Returns True if we can connect to Cosmos DB and list databases, False otherwise.
-#     """
-#     try:
-#         cosmos_endpoint = os.getenv("COSMOS_DB_ENDPOINT")
-
-#         if not cosmos_endpoint:
-#             return False, "Missing Cosmos DB endpoint in environment variables."
-
-#         # Use DefaultAzureCredential for authentication
-#         credential = DefaultAzureCredential()
-
-#         # Initialize Cosmos client
-#         client = CosmosClient(url=cosmos_endpoint, credential=credential)
-
-#         # List databases (as a simple connectivity test)
-#         databases = list(client.list_databases())
-#         if databases:
-#             return True, "Successfully connected to Cosmos DB. Databases found: " + ", ".join([db['id'] for db in databases])
-#         else:
-#             return True, "Successfully connected to Cosmos DB, but no databases found."
-#     except Exception as e:
-#         return False, f"Error connecting to Cosmos DB: {str(e)}"
-
 def check_local_config():
     """
     Returns True if the required environment variables are set, False otherwise.
@@ -114,12 +88,23 @@ def check_local_config():
         "AZURE_OPENAI_ENDPOINT",
         "STORAGE_ACCOUNT_NAME",
         "DEFAULT_CONTAINER",
-        "AZURE_WHISPER_MODEL"
+        "AZURE_WHISPER_MODEL",
+        "AZURE_SEARCH_ENDPOINT",
+        "AZURE_AUDIO_MODEL"
     ]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
         return False, f"Missing environment variables: {', '.join(missing_vars)}"
     return True, "All required environment variables are set."
+
+def check_azure_search():
+    ## check if the search endpoint is working
+    try:
+        result = azure_search.index_exists("test")
+        return True, "Azure Search is working."
+    except Exception as e:
+        return False, f"Error calling Azure Search: {str(e)}"
+
 
 def check_local_misc_file():
     # check if .misc/clean_transcription.txt exists
@@ -166,16 +151,11 @@ with st.expander("Check Azure Blob Storage", expanded=True):
     else:
         st.error(blob_message)
 
-# Check Cosmos DB (uncomment once you’ve set up your environment variables and function)
-# with st.expander("Check Azure Cosmos DB", expanded=True):
-#     cosmos_ok, cosmos_message = check_azure_cosmos()
-#     if cosmos_ok:
-#         st.success(cosmos_message)
-#     else:
-#         st.error(cosmos_message)
-
-
-# You can add more checks here for additional services,
-# such as a separate Azure OpenAI mini-endpoint or others, using the same pattern.
-
+# Check Azure Search
+with st.expander("Check Azure Search", expanded=True):
+    search_ok, search_message = check_azure_search()
+    if search_ok:
+        st.success(search_message)
+    else:
+        st.error(search_message)
 
