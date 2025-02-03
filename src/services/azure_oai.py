@@ -133,7 +133,7 @@ def transcribe_gpt4_audio(audio_file):
         azure_ad_token_provider=token_provider
         )
    
-    print(f"Transcribing {audio_file}")
+    print(f"Transcribing with gpt-4o-audio {audio_file}")
     file = open(audio_file, "rb")
     encoded_string = base64.b64encode(file.read()).decode('utf-8')
     file.close()
@@ -144,7 +144,7 @@ def transcribe_gpt4_audio(audio_file):
             "content": [
                 { 
                     "type": "text",
-                    "text": "Transcribe the audio"
+                    "text": "Transcribe the audio as is. no explanation needed. If you are able to detect the agent versus the customer, please label them as such. use **Customer:** and **Agent:** to label the speakers."
                 },
                 {
                     "type": "input_audio",

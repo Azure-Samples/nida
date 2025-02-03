@@ -38,19 +38,20 @@ def transcribe_audio(audio_path: str):
                 return "Skipping due to transcription error."
             else:
                 transcription = result.text
+
+             # Step 2: Parse and label speakers with Azure OpenAI GPT-4
+            parsed_conversation = parse_speakers_with_gpt4(transcription)
+            if len(parsed_conversation) == 0:
+                return "Skipping due to parsing error."
+            
+            return parsed_conversation
         else:
             result = azure_oai.transcribe_gpt4_audio(local_file)
             if len(result) == 0:
                 return "Skipping due to transcription error."
             else:
-                transcription = result
-        
-        # Step 2: Parse and label speakers with Azure OpenAI GPT-4
-        parsed_conversation = parse_speakers_with_gpt4(transcription)
-        if len(parsed_conversation) == 0:
-            return "Skipping due to parsing error."
-        
-        return parsed_conversation
+                return result
+          
     except Exception as e:
         print(f"Error transcribing {audio_path}: {e}")
         return f"Error transcribing {audio_path}: {e}"

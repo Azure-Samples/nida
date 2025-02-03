@@ -240,10 +240,11 @@ st.markdown(
 pg = st.navigation([
     st.Page("calls.py", title="Calls Management", icon="📞"),
     st.Page("personas.py", title="Personas management", icon="👥"),
-    st.Page("genaianalysis.py", title="GenAI Analysis", icon="⚙️"),
+    st.Page("genaianalysis.py", title="GenAI Analysis", icon="🤖"),
     st.Page("summary.py", title="Summary", icon="📈"),
     st.Page("details.py", title="Details", icon="📊"),
     st.Page("configuration.py", title="Configuration", icon="⚙️"),
+    st.Page("aiscore.py", title="AI Score", icon="📈"),
     st.Page("diagnostics.py", title="Diagnostics", icon="🔍"),
 ])
 pg.run()
