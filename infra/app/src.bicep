@@ -12,8 +12,8 @@ param azureOpenaiResourceName string = 'nida'
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
-param searchServiceName string = 'my-search-service'
-param searchSku string = 'standard'
+param searchServiceName string = 'nida-search'
+param searchSku string = 'basic'
 
 @description('Custom subdomain name for the OpenAI resource (must be unique in the region)')
 param customSubDomainName string
@@ -155,6 +155,11 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
               name: 'AZURE_AUDIO_MODEL'
               value: audioDeployment.name
             }
+            {
+              name: 'AZURE_SEARCH_ENDPOINT'
+              value: 'https://${searchServiceName}.search.windows.net'
+            }
+         
           ],
           env,
           map(secrets, secret => {
@@ -175,7 +180,6 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   }
 }
 
-
 // Deploy the Azure Cognitive Search service
 resource searchService 'Microsoft.Search/searchServices@2020-08-01' = {
   name: searchServiceName
@@ -185,10 +189,9 @@ resource searchService 'Microsoft.Search/searchServices@2020-08-01' = {
   }
   properties: {
     hostingMode: 'default'
-    // other properties as needed
+    // Other properties as needed
   }
 }
-
 
 resource openai 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   name: azureOpenaiResourceName
@@ -317,6 +320,29 @@ resource appOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-0
     principalId: identity.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+  }
+}
+
+// (Replace the roleDefinitionId with the proper built-in role ID for your scenario.)
+resource searchRoleAssignmentContrib 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  // Generate a deterministic GUID based on inputs.
+  name: guid(searchService.id, identity.id, 'Search Index Data Contributor')
+  scope: searchService
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource searchRoleAssignmentIndexer 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  // Generate a deterministic GUID based on inputs.
+  name: guid(searchService.id, identity.id, 'Search Service Contributor')
+  scope: searchService
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
