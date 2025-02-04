@@ -9,9 +9,10 @@ COPY requirements.txt .
 
 # Install any needed packages
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of your code, including misc, azure_oai, and azure_storage folders
+# Copy the rest of your code, excluding .env file
 COPY . .
+# Remove the .env file if it was copied
+RUN rm -f .env
 
 # If you want the default port to be 80, you can do:
 EXPOSE 80
