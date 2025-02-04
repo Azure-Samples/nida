@@ -44,6 +44,8 @@ def build_system_prompt(persona, provided_context):
     ## PROVIDED CONTEXT
     {context}
     ## END PROVIDED CONTEXT
+
+    Reply in normal text format.
     """
     return system_prompt_template.format(
         persona_context=persona, 
@@ -74,7 +76,7 @@ def load_llm_analysis(prompt_file):
 
 
 # ---------------- Sidebar: Prompt Selection and Index Creation ----------------
-st.header("👤 Persona Setup for Search")
+st.header("👤 Chat with your calls")
 
 # List all persona (.txt) files available in the container.
 all_prompt_files = azure_storage.list_prompts()
@@ -153,10 +155,14 @@ if user_input:
     combined_context = st.session_state.messages.copy()
     combined_context.append({"role": "system", "content": system_context})
 
-    # ---------------- Call Azure OpenAI LLM ----------------
-    response = azure_oai.chat_with_oai(combined_context)
-
-    # Append and display the assistant's response.
-    st.session_state.messages.append({"role": "assistant", "content": response})
+    # ---------------- Call Azure OpenAI LLM with Streaming ----------------
+    response_stream = azure_oai.chat_with_oai(combined_context)
+    full_response = ""
     with st.chat_message("assistant"):
-        st.markdown(response)
+    # Create an empty placeholder to update the markdown continuously
+        message_placeholder = st.empty()
+        for chunk in response_stream:
+            full_response += chunk
+            # Update the same markdown element each time
+            message_placeholder.markdown(full_response)
+    st.session_state.messages.append({"role": "assistant", "content": full_response})

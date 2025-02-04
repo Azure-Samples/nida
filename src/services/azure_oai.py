@@ -199,12 +199,23 @@ def chat_with_oai(messages, deployment=AZURE_OPENAI_DEPLOYMENT_NAME):
         model=deployment,   
         temperature=0.2,
         top_p=1,
+        stream=True,
         max_tokens=5000,
         stop=None,
     )  
 
-    return clean_json_string(completion.choices[0].message.content)
+      # Iterate over the streamed response
+    for chunk in completion:
+        # Access the first choice from the chunk.
+        # Since `chunk` is a Pydantic model, use attribute access instead of .get()
+        if not chunk.choices:
+            continue
 
+        delta = chunk.choices[0].delta  # delta is also a Pydantic model
+        # Get the content if available
+        content = delta.content if delta and hasattr(delta, "content") else ""
+        if content:
+            yield content
 
 def get_insights(summaries):
 
