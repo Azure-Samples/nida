@@ -61,7 +61,7 @@ def check_azure_blob():
     """
     try:
         storage_account_name = os.getenv("STORAGE_ACCOUNT_NAME")
-        default_container = os.getenv("DEFAULT_CONTAINER", "default")
+        default_container = os.getenv("DEFAULT_CONTAINER", "mainproject")
         # Use DefaultAzureCredential for authentication
 
         credential = DefaultAzureCredential()
@@ -88,7 +88,6 @@ def check_local_config():
     required_vars = [
         "AZURE_OPENAI_ENDPOINT",
         "STORAGE_ACCOUNT_NAME",
-        "DEFAULT_CONTAINER",
         "AZURE_WHISPER_MODEL",
         "AZURE_SEARCH_ENDPOINT",
         "AZURE_AUDIO_MODEL"
