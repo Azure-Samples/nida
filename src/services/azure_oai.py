@@ -230,8 +230,6 @@ def get_insights(summaries):
         azure_endpoint= AZURE_OPENAI_ENDPOINT, 
         azure_ad_token_provider=token_provider
         )
-
-
     
     messages = [
         {
@@ -255,4 +253,4 @@ def get_insights(summaries):
         stop=None,
     )  
 
-    return clean_json_string(completion.choices[0].message.content)
+    return completion.choices[0].message.content

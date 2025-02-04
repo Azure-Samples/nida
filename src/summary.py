@@ -137,7 +137,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=False)
 def get_insights_cached(values):
     return azure_oai.get_insights(values)
 
