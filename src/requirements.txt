@@ -8,7 +8,5 @@ streamlit==1.41.0
 azure-cognitiveservices-speech==1.41.1
 altair==5.5.0
 datetime==5.5
-wordcloud
 numpy
-matplotlib
 azure-search-documents

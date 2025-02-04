@@ -3,10 +3,7 @@ from datetime import datetime
 from services import azure_storage, azure_oai
 from collections import defaultdict
 import numpy as np
-import matplotlib.pyplot as plt
-from wordcloud import WordCloud
 import pandas as pd
-import io
 import altair as alt
 ############################
 # 1. Helper Functions
@@ -222,7 +219,7 @@ for i, key in enumerate(keys):
             
             # Create an Altair bar chart with a different color for each bin
             chart = alt.Chart(chart_data).mark_bar().encode(
-                x=alt.X('Value:O', title='Value'),
+                x=alt.X('Value:O', title=to_string(key)),
                 y=alt.Y('Count:Q', title='Count'),
                 # Using the 'Value' field to assign colors
                 color=alt.Color('Value:N', scale=alt.Scale(scheme='category10'))
