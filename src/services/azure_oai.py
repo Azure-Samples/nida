@@ -204,3 +204,44 @@ def chat_with_oai(messages, deployment=AZURE_OPENAI_DEPLOYMENT_NAME):
     )  
 
     return clean_json_string(completion.choices[0].message.content)
+
+
+def get_insights(summaries):
+
+    system_prompt = """
+    you will be provided with different call summaries, your task is to analyze all the summaries, and return key insights.
+
+    What are the main topics? Issues? Insights and recommendations
+
+    """
+    oai_client = AzureOpenAI(
+        api_version= AZURE_OPENAI_API_VERSION,
+        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
+        azure_ad_token_provider=token_provider
+        )
+
+
+    
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt
+        }
+    ] + [
+        {
+            "role": "user",
+            "content": f"call: {call} \n\n"
+        } for call in summaries
+    ]
+      
+
+    completion = oai_client.chat.completions.create(
+        messages=messages,
+        model=AZURE_OPENAI_DEPLOYMENT_NAME,   
+        temperature=0.2,
+        top_p=1,
+        max_tokens=5000,
+        stop=None,
+    )  
+
+    return clean_json_string(completion.choices[0].message.content)

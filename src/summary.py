@@ -1,13 +1,13 @@
 import streamlit as st
 from datetime import datetime
-from services import azure_storage
+from services import azure_storage, azure_oai
 from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import pandas as pd
 import io
-
+import altair as alt
 ############################
 # 1. Helper Functions
 ############################
@@ -140,6 +140,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+@st.cache_data(show_spinner=True)
+def get_insights_cached(values):
+    return azure_oai.get_insights(values)
+
 def is_valid_analysis(data):
     """
     Returns True if the analysis data seems valid, False otherwise.
@@ -197,30 +201,38 @@ tabs = st.tabs(keys)
 for i, key in enumerate(keys):
     values = aggregated[key]
     with tabs[i]:
-        st.markdown(f"### **{key}**")
 
         # Classification
         numeric_values = [v for v in values if is_numeric(v)]
         bool_candidates = [v for v in values if can_be_boolean(v)]
 
-        #print(f"values : {values} vs numeric_values : {numeric_values} vs bool_candidates : {bool_candidates}")
         # 1) All numeric?
         if len(numeric_values) == len(values):
-            arr = np.array(numeric_values, dtype=float)
-            st.write(f"**Count**: {len(arr)}")
-            st.write(
-                f"**Min**: {arr.min()}, "
-                f"**Max**: {arr.max()}, "
-                f"**Mean**: {arr.mean():.2f}, "
-                f"**Std**: {arr.std():.2f}"
+               # Convert list to a NumPy array of ints
+            arr = np.array(numeric_values, dtype=int)
+            
+            # Get unique values and their counts
+            unique_vals, counts = np.unique(arr, return_counts=True)
+            
+            # Prepare a DataFrame
+            chart_data = pd.DataFrame({
+                "Value": unique_vals,
+                "Count": counts
+            })
+            
+            # Create an Altair bar chart with a different color for each bin
+            chart = alt.Chart(chart_data).mark_bar().encode(
+                x=alt.X('Value:O', title='Value'),
+                y=alt.Y('Count:Q', title='Count'),
+                # Using the 'Value' field to assign colors
+                color=alt.Color('Value:N', scale=alt.Scale(scheme='category10'))
+            ).properties(
+                width=600,
+                height=400
             )
-            # Plot histogram
-            fig, ax = plt.subplots()
-            ax.hist(arr, bins=10, alpha=0.7, color='blue')
-            ax.set_title(f"Distribution for {key}")
-            st.pyplot(fig)
-
-        # 2) All can be boolean (includes Yes/No)?
+            
+            # Display the chart in Streamlit
+            st.altair_chart(chart, use_container_width=True)
         elif len(bool_candidates) == len(values):
             actual_bool_values = [coerce_to_boolean(v) for v in values]
             true_count = sum(actual_bool_values)
@@ -237,34 +249,8 @@ for i, key in enumerate(keys):
 
         # 3) Otherwise, treat as text
         else:
-            text_data = " ".join([to_string(v) for v in values if v is not None])
-            # print("printin text data")
-            # print(text_data)
-            # print("end text dataa")
-            if text_data.strip():
-                wordcloud = WordCloud(
-                    width=400, height=200,
-                    background_color='white',
-                    max_words=15
-                ).generate(text_data)
-                
-               # Create the figure
-                fig, ax = plt.subplots(figsize=(2, 2), dpi=500)
-                ax.imshow(wordcloud, interpolation='bilinear')
-                ax.axis("off")
-
-                # Save to a buffer
-                buf = io.BytesIO()
-                fig.savefig(buf, format='png', bbox_inches='tight')
-                buf.seek(0)
-
-                # Use st.image to display
-                st.image(buf, width=500)  # specify width in px
-            else:
-                st.write("No non-empty string data to display.")
-
-            # Sample of raw values
-            st.write("**Sample Values**:", values[:10], "..." if len(values) > 10 else "")
+            insights = get_insights_cached(values)
+            st.write(insights)
             st.write("---")
 
 # -------------------------------------------------------------------------
