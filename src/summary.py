@@ -171,19 +171,15 @@ if not all_prompt_files:
     st.stop()
 
 selected_prompt_txt = st.selectbox("Select Persona:", all_prompt_files)
-
 # 2. Load data for that prompt
 llm_analysis = azure_storage.list_llmanalysis(selected_prompt_txt)
-
 # Parse the JSON input
 all_jsons = []
 if llm_analysis:
     for file in llm_analysis:
         try:
             data = azure_storage.read_llm_analysis(selected_prompt_txt, file)
-            if is_valid_analysis(data):
-                all_jsons.append(data)
-            
+            all_jsons.append(data)
         except Exception as e:
             st.error(f"Error reading {file}: {e}")
 
