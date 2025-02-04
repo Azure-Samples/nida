@@ -4,7 +4,8 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AzureOpenAI
 from azure.storage.blob import BlobServiceClient
 from azure.identity import DefaultAzureCredential
-from services import azure_search
+
+    
 
 token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")    
 
@@ -153,9 +154,15 @@ with st.expander("Check Azure Blob Storage", expanded=True):
 
 # Check Azure Search
 with st.expander("Check Azure Search", expanded=True):
-    search_ok, search_message = check_azure_search()
-    if search_ok:
-        st.success(search_message)
-    else:
-        st.error(search_message)
+    try:
+        from services import azure_search
+        search_ok, search_message = check_azure_search()
+        if search_ok:
+            st.success(search_message)
+        else:
+            st.error(search_message)
+    except ImportError:
+        st.error("Azure Search service not available. Please check the service implementation.")
+    
+    
 
