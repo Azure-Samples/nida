@@ -172,8 +172,9 @@ for i, param_key in enumerate(param_keys):
 
         # Check if the result is a dictionary with score and explanation
         if isinstance(result, dict):
-            ai_evaluation = result.get("Score", "N/A")
-            ai_explanation = result.get("Explanation", "N/A")
+            lower_result = {k.lower(): v for k, v in result.items()}
+            ai_evaluation = lower_result.get("score", "N/A")
+            ai_explanation = lower_result.get("explanation", "N/A")
         else:
             ai_evaluation = result
             ai_explanation = "N/A"  # or handle differently if needed
