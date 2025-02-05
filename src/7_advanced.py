@@ -265,7 +265,6 @@ aggregated = aggregate_data(eval_data)
 # This handles columns of different lengths by converting values to Pandas Series.
 df = pd.DataFrame({k: pd.Series(v) for k, v in aggregated.items()})
 
-st.markdown(df.head())
 # Define the parameters to evaluate.
 parameters = azure_storage.read_prompt_config(selected_eval_prompt) or []
 
