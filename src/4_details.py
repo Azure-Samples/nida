@@ -132,10 +132,6 @@ if not analysis_data:
     st.warning(f"No data found for Call ID {selected_call_id}")
     st.stop()
 
-# fetch the KPIs from the prompt config (may be None or empty)
-config_data = azure_storage.read_prompt_config(selected_prompt) or {}
-# Example: { "Parameter 1": "Convincing power of sales", "Parameter 2": "Agent confident", ... }
-
 eval_filename = f"{selected_call_id}.json"
 ground_truth = azure_storage.read_eval(selected_prompt, eval_filename)
 

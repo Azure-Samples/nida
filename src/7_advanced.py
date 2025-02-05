@@ -1,6 +1,9 @@
 import pandas as pd
 import json
 import streamlit as st
+import os
+from sklearn.metrics import accuracy_score, precision_score, f1_score
+from collections import defaultdict
 
 # Adjust path as needed to import your modules
 from services import azure_storage
@@ -27,11 +30,117 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+############################
+# 1. Helper Functions
+############################
+def flatten_json(nested_json, parent_key='', sep='.'):
+    """
+    Recursively flattens a nested JSON/dict.
+    E.g. {"Key1": {"SubKey1": "val1", "SubKey2": "val2"}, "Key2": true}
+    becomes {"Key1.SubKey1": "val1", "Key1.SubKey2": "val2", "Key2": true}
+    """
+    items = []
+    for k, v in nested_json.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_json(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
 
+
+def aggregate_data(json_list):
+    """
+    Flatten each JSON and collect values in a dict of lists:
+        {
+          "Key1.SubKey1": [val1, val2, ...],
+          "Key2": [val3, val4, ...],
+          ...
+        }
+    """
+    aggregated = defaultdict(list)
+    for j in json_list:
+        flat_j = flatten_json(j)
+        for key, val in flat_j.items():
+            aggregated[key].append(val)
+    return aggregated
+
+def convert_value(x):
+
+    # Return booleans unchanged.
+    if isinstance(x, bool):
+        return x
+
+    # Leave integers unchanged.
+    if isinstance(x, int):
+        return x
+
+    # Process floats: only 1.0 and 0.0 are recognized.
+    if isinstance(x, float):
+        if x == 1.0:
+            return True
+        elif x == 0.0:
+            return False
+        else:
+            return None
+
+    # Process strings.
+    if isinstance(x, str):
+        s = x.strip().lower()
+        mapping = {"yes": True, "true": True, "no": False, "false": False}
+        if s in mapping:
+            return mapping[s]
+        # Also allow strings that are numeric representations.
+        try:
+            num = int(s)
+            if num == 1:
+                return True
+            elif num == 0:
+                return False
+        except ValueError:
+            return None
+        return None
+
+    # For other types, attempt to convert to a string and process.
+    try:
+        s = str(x).strip().lower()
+    except Exception:
+        return None
+    if s in ("yes", "true"):
+        return True
+    elif s in ("no", "false"):
+        return False
+    return None
+
+def get_eval_data(selected_prompt_name):
+    llm_analysis = azure_storage.list_llmanalysis(selected_prompt_name)
+# Parse the JSON input
+    all_jsons = []
+    if llm_analysis:
+        for file in llm_analysis:
+            try:
+                data = azure_storage.read_llm_analysis(selected_prompt_name, file)
+                ground_truth = azure_storage.read_eval(selected_prompt_name, file)
+                all_jsons.append(data)
+                for key, value in ground_truth.items():
+                    if key.lower() == "call id":
+                        continue
+                    data[f"{key}.gt"] = value
+                all_jsons.append(data)
+            except Exception as e:
+                st.error(f"Error reading {file}: {e}")
+    return all_jsons
+
+############################
+# 1. UI
+############################
 
 st.header("1. ⚙️ Scoring Parameters")
 #add some help here to explain that those KPIs should align with the JSON defined in the personas to be extracted
 st.markdown("Define the KPIs/Parameters that will be extracted from the evaluation files.")
+
+if "kpis" not in st.session_state:
+    st.session_state["kpis"] = []
 
 prompt_files = azure_storage.list_prompts()
 if not prompt_files:
@@ -42,15 +151,13 @@ selected_eval_prompt = st.selectbox("Select a Persona", prompt_files)
 if not selected_eval_prompt:
     st.info("Select a persona from the dropdown above to continue.")
     st.stop()
-
-if "kpis" not in st.session_state:
+else:
     existing_config = azure_storage.read_prompt_config(selected_eval_prompt)
     if existing_config:
         st.session_state["kpis"] = existing_config
     else:
         st.session_state["kpis"] = []
     
-
 # --- UI for adding a new KPI ---
 with st.expander("Add or Update a KPI Parameter", expanded=False):
     kpi_name = st.text_input("KPI Name", value="", max_chars=100)
@@ -80,6 +187,8 @@ if st.session_state["kpis"] and len(st.session_state["kpis"]) > 0:
 else:
     st.info("No KPIs defined yet. Add at least one above.")
     st.stop()
+
+st.markdown("---")
 
 st.title("2. 📊 Ground truth")
 st.markdown("Upload an evaluation (CSV/XLSX) containing the KPIs defined for a given prompt.")
@@ -141,3 +250,69 @@ if uploaded_eval_file is not None:
 
 st.markdown("---")
 
+st.title("3. 📈 Evaluation Results")
+st.markdown("Evaluate the AI predictions against the ground truth data.")
+
+eval_data = get_eval_data(selected_eval_prompt)
+
+# Aggregate all JSON data
+if len(eval_data) == 0:
+    st.warning("⚠️  No Persona or calls have been analyzed yet.")
+    st.stop()
+
+aggregated = aggregate_data(eval_data)
+
+# This handles columns of different lengths by converting values to Pandas Series.
+df = pd.DataFrame({k: pd.Series(v) for k, v in aggregated.items()})
+
+st.markdown(df.head())
+# Define the parameters to evaluate.
+parameters = azure_storage.read_prompt_config(selected_eval_prompt) or []
+
+# Create a column layout: one column per parameter.
+cols = st.columns(len(parameters))
+
+for i, param in enumerate(parameters):
+    # According to your CSV format:
+    #   Ground truth is in the column "<Parameter>"
+    #   AI prediction is in the column "<Parameter> - Score"
+    pred_col = f"{param}.score"
+    truth_col = f"{param}.gt"
+    
+    with cols[i]:
+        st.write(f"### {param}")
+        if pred_col not in df.columns or truth_col not in df.columns:
+            st.error(f"Columns for {param} not found.")
+            continue
+        
+        # Convert the values using your conversion function.
+        y_true = df[truth_col].apply(convert_value)
+        y_pred = df[pred_col].apply(convert_value)
+
+        # Drop rows where conversion failed.
+        valid_mask = y_true.notnull() & y_pred.notnull()
+        y_true = y_true[valid_mask]
+        y_pred = y_pred[valid_mask]
+
+        if len(y_true) == 0:
+            st.warning(f"No valid data for {param}")
+        else:
+            # Compute accuracy (works regardless of averaging).
+            acc = accuracy_score(y_true, y_pred)
+
+           # Decide on the averaging method:
+            # If the first elements in both series are booleans, assume binary classification.
+            # Otherwise (e.g. if integers are used), assume it's not binary.
+            if isinstance(y_true.iloc[0], bool) and isinstance(y_pred.iloc[0], bool):
+                # Binary classification.
+                prec = precision_score(y_true, y_pred, average='binary', pos_label=True, zero_division=0)
+                f1 = f1_score(y_true, y_pred, average='binary', pos_label=True, zero_division=0)
+            else:
+                # Assume multi-class (non-binary) when integers are used.
+                prec = precision_score(y_true, y_pred, average='weighted', zero_division=0)
+                f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
+
+            # Display the metrics.
+            st.metric("Accuracy", f"{acc:.2f}")
+            st.metric("Precision", f"{prec:.2f}")
+            st.metric("F1 Score", f"{f1:.2f}")
