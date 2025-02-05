@@ -215,21 +215,22 @@ def get_calls_to_transcribe():
 
 def upload_prompt_config(prompt_name, config):
     """
-    Upload a JSON config for a given prompt. The config blob name is <prompt_no_ext>__config.json
+    Upload a config for a given prompt as a normal string.
+    The config blob name is <prompt_no_ext>__config.txt.
     """
-    config_blob_name = prompt_name.split('.')[0] + "__config.json"
-    data_to_upload = json.dumps(config)
-    return upload_blob(data_to_upload, config_blob_name, PROMPT_FOLDER)
+    config_blob_name = prompt_name.split('.')[0] + "__config.txt"
+    save = ",".join(config)
+    return upload_blob(save, config_blob_name, PROMPT_FOLDER)
 
 
 def read_prompt_config(blob_name):
     """
     Read the JSON config for a given prompt (if it exists).
     """
-    config_blob_name = blob_name.split('.')[0] + "__config.json"
+    config_blob_name = blob_name.split('.')[0] + "__config.txt"
     try:
         content = read_blob(config_blob_name, PROMPT_FOLDER)
-        return json.loads(content)
+        return content.split(",")
     except Exception:
         return None
 

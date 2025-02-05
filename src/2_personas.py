@@ -5,8 +5,9 @@ import json
 import streamlit as st
 
 # Adjust path as needed to import your modules
-from services import azure_storage
-from services import azure_oai
+from services import azure_storage, azure_oai
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # -------------------------------------------------------- #
 # Custom CSS for a cleaner look
@@ -32,6 +33,21 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+
+# Function to process a single blob
+def analyze_blob(persona_prompt, blob_name):
+    # Read transcription
+    transcribed_text = azure_storage.read_transcription(blob_name)
+    # Call the LLM with the prompt and transcription text
+    analysis_result = azure_oai.call_llm(prompt_content, transcribed_text)
+    # Upload the analysis result back to storage
+    azure_storage.upload_llm_analysis_to_blob(
+        blob_name, 
+        persona_prompt, 
+        analysis_result
+    )
+    return f"Analysis completed for **{blob_name}**."
 
 # -------------------------------------------------------- #
 # SIDEBAR
@@ -93,36 +109,33 @@ if st.button("Update Persona"):
     else:
         st.error("Cannot update with empty content.")
 
-st.subheader("2.b. Optional: Display values")
-#add some help here to explain that those KPIs should align with the JSON defined in the personas to be extracted
-st.markdown("By default we will use the keys in the JSON from the LLM output. If you want to have friendly names in the next steps, please define them here.")
+st.markdown("---")
 
-# --- UI for adding a new KPI ---
-with st.expander("Add or Update a KPI Parameter", expanded=False):
-    kpi_name = st.text_input("KPI Name", value="", max_chars=100)
-    kpi_desc = st.text_input("KPI Description", value="", max_chars=200)
-    add_kpi_col, _ = st.columns([1, 3])
-    with add_kpi_col:
-        if st.button("Add KPI"):
-            if not kpi_name.strip():
-                st.error("KPI name cannot be empty.")
-            else:
-                st.session_state["kpis"][kpi_name] = kpi_desc
-                azure_storage.upload_prompt_config(selected_prompt_name, st.session_state["kpis"])
-                st.success(f"KPI '{kpi_name}' added/updated.")
+st.title("3. 🤖 LLM Analysis")
+st.markdown("Analyze all transcribed files using a selected persona.")
 
 
-# --- Display current KPIs ---
-if st.session_state["kpis"]:
-    st.write("**Current KPIs/Parameters**:")
-    # A simple table with remove buttons
-    for key, val in list(st.session_state["kpis"].items()):
-        remove_col, text_col = st.columns([0.1, 0.9])
-        with remove_col:
-            if st.button("❌", key=f"remove_{key}", help=f"Remove {key}"):
-                st.session_state["kpis"].pop(key, None)
-                azure_storage.upload_prompt_config(selected_prompt_name, st.session_state["kpis"])
-        with text_col:
-            st.write(f"**{key}**: {val}")
-else:
-    st.info("No KPIs defined yet. Add at least one above.")
+if st.button("Analyze with GenAI"):
+    transcription_blobs = azure_storage.list_transcriptions()
+    if not transcription_blobs:
+        st.warning("No transcribed files available for analysis.")
+    else:
+        prompt_content = azure_storage.read_prompt(selected_prompt_name)
+        with st.spinner("Running analysis on transcriptions..."):
+        # Create a thread pool with a maximum of 5 threads
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                # Submit each blob's analysis task to the executor
+                future_to_blob = {
+                    executor.submit(analyze_blob, selected_prompt_name, blob_name): blob_name
+                    for blob_name in transcription_blobs
+                }
+                # Process and display the results as each thread completes
+                for future in as_completed(future_to_blob):
+                    blob_name = future_to_blob[future]
+                    try:
+                        result = future.result()
+                    except Exception as exc:
+                        st.error(f"Analysis generated an exception for {blob_name}: {exc}")
+                    else:
+                        st.success(result)
+

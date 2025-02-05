@@ -238,14 +238,13 @@ st.markdown(
 )
 
 pg = st.navigation([
-    st.Page("calls.py", title="Calls Management", icon="📞"),
-    st.Page("personas.py", title="Personas management", icon="👥"),
-    st.Page("genaianalysis.py", title="GenAI Analysis", icon="🤖"),
-    st.Page("summary.py", title="Summary", icon="📈"),
-    st.Page("details.py", title="Details", icon="📊"),
-    st.Page("chat.py", title="Chat With your Calls", icon="💬"),
-    st.Page("configuration.py", title="Configuration", icon="⚙️"),
-    st.Page("aiscore.py", title="AI Score", icon="📈"),
-    st.Page("diagnostics.py", title="Diagnostics", icon="🔍"),
+    st.Page("1_calls.py", title="Calls Management", icon="📞"),
+    st.Page("2_personas.py", title="Personas and GenAI", icon="👥"),
+    st.Page("3_summary.py", title="Summary", icon="📈"),
+    st.Page("4_details.py", title="Details", icon="📊"),
+    st.Page("5_chat.py", title="Chat With your Calls", icon="💬"),
+    st.Page("6_configuration.py", title="Configuration", icon="⚙️"),
+    st.Page("7_advanced.py", title="Advanced", icon="📈"),
+    st.Page("8_diagnostics.py", title="Diagnostics", icon="🔍"),
 ])
 pg.run()

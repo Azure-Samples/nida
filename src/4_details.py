@@ -62,10 +62,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-def display_ai_evaluation(ground_truth, param_key, display_name, ai_evaluation):
+def display_ai_evaluation(ground_truth, param_key, ai_evaluation):
     st.markdown("#### LLM Results")
     # Always show the AI score
-    if ground_truth:
+    if not ground_truth or not ground_truth.get(param_key):
+        st.markdown(
+            f"""
+            <div class="parameter-card">
+                {ai_evaluation}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
         gt_score = ground_truth.get(param_key, None)
         if gt_score is not None:
             match = (str(ai_evaluation).strip().lower() == str(gt_score).strip().lower())
@@ -84,17 +93,6 @@ def display_ai_evaluation(ground_truth, param_key, display_name, ai_evaluation):
                 """,
                 unsafe_allow_html=True
             )
-        else:
-            st.info(f"No ground-truth for '{display_name}'")
-    else:
-        st.markdown(
-            f"""
-            <div class="parameter-card">
-                {ai_evaluation}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
 
 def parse_call_id_from_filename(filename: str) -> str:
     """
@@ -105,7 +103,7 @@ def parse_call_id_from_filename(filename: str) -> str:
 
 
 # -------------------- PARAMETERS ANALYSIS --------------------
-st.markdown("### 🎯 Call Analysis")
+st.markdown("### 🎯 Call Details")
 
  # 1) List all prompts
 prompt_list = azure_storage.list_prompts()  # e.g. ["marketing_prompt.txt", "sales_prompt_v2.txt", ...]
@@ -151,20 +149,11 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*")
 
-# Decide which keys to use (config_data if available, else analysis_data).
-if config_data:
-    param_keys = sorted(config_data.keys(), key=lambda x: x.lower())
-else:
-    # Fallback if config_data is empty or None
-    param_keys = sorted(analysis_data.keys(), key=lambda x: x.lower())
 
-# Create tabs from either the config labels or raw keys
-tabs = st.tabs([config_data.get(k, k) for k in param_keys])
-
+param_keys = list(analysis_data.keys())
+tabs = st.tabs(param_keys)
 
 for i, param_key in enumerate(param_keys):
-    # The user-friendly name from the config, or fallback to the raw key
-    display_name = config_data.get(param_key, param_key)
 
     with tabs[i]:
         # Retrieve the analysis result for the parameter
@@ -181,11 +170,11 @@ for i, param_key in enumerate(param_keys):
 
         # Compare with ground-truth (if it exists)
         if not ai_explanation or ai_explanation.strip().lower() == "n/a":
-            display_ai_evaluation(ground_truth, param_key, display_name, ai_evaluation)
+            display_ai_evaluation(ground_truth, param_key, ai_evaluation)
         else:
             col1, col2 = st.columns(2)
             with col1:
-                display_ai_evaluation(ground_truth, param_key, display_name, ai_evaluation)
+                display_ai_evaluation(ground_truth, param_key, ai_evaluation)
             with col2:
                 st.markdown("#### LLM Explanation")
                 if ai_explanation and ai_explanation.strip().lower() != "n/a":
