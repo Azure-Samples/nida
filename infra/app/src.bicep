@@ -12,8 +12,7 @@ param azureOpenaiResourceName string = 'nida'
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
-param searchServiceName string = 'nida-search'
-param searchSku string = 'basic'
+param searchServiceName string = 'nida-aisearch'
 
 @description('Custom subdomain name for the OpenAI resource (must be unique in the region)')
 param customSubDomainName string
@@ -181,15 +180,28 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
 }
 
 // Deploy the Azure Cognitive Search service
-resource searchService 'Microsoft.Search/searchServices@2020-08-01' = {
+resource searchService 'Microsoft.Search/searchServices@2024-06-01-preview' = {
   name: searchServiceName
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identity.id}': {}
+    }
+  }
   sku: {
-    name: searchSku
+    name: 'standard'
   }
   properties: {
+    replicaCount: 1
+    partitionCount: 1
     hostingMode: 'default'
-    // Other properties as needed
+    authOptions: {
+      aadOrApiKey: {
+        aadAuthFailureMode: 'http403'
+      }
+    }
+    publicNetworkAccess: 'Enabled'
   }
 }
 
