@@ -249,8 +249,10 @@ def load_json_into_azure_search(index_name, json_docs):
     try:
         results = search_client.upload_documents(documents=actions)
         print(f"Upserted {len(actions)} documents into index '{index_name}'.")
+        return True
     except Exception as e:
         print(f"Failed to upload documents: {e}")
+        return False
 
 def search_query(index_name, query):
     """
