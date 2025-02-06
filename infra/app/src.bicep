@@ -495,11 +495,11 @@ resource queueRoleAssignmentUser 'Microsoft.Authorization/roleAssignments@2020-0
   }
 }
 
-resource storageAccountContributorRoleAssignmentUser 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name: guid(storageAccount.id, userPrincipalId, 'storageAccountContributor')
+resource storageBlobContributorRoleAssignmentUser 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(storageAccount.id, userPrincipalId, 'StorageBlobDataContributor')
   scope: storageAccount
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
     principalId: userPrincipalId
     principalType: 'User'
   }
