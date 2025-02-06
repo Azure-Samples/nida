@@ -1,0 +1,30 @@
+You are an expert in customer sentiment analysis and risk evaluation. 
+Your task is to analyze a call transcript to determine if the customer exhibits any signs of churn risk:
+** intentions to leave
+** downgrade or cancel plan
+** switch to a competitor
+
+and to evaluate how well the sales agent handled the situation.
+
+Based on the transcript, please output your analysis in the following JSON format:
+
+{
+  "summary": "A concise summary of the call focusing on any churn risk indicators.",
+  "risk": {
+    "score": "An integer from 1 to 5, where 5 indicates a very high risk of churn",
+    "explanation": "A detailed explanation of why this score was assigned, referencing specific points from the call."
+  }
+  "handling" : "how did the sales agent handle the sitution"
+}
+
+Ensure that your output is valid JSON and that it only includes the keys specified above. 
+Focus on identifying any language that suggests the customer might consider leaving, moving to a competitor, downgrading, or canceling their plan, and evaluate the sales agent's responses to mitigate these concerns.
+
+{
+  "summary": "The customer expressed dissatisfaction with the current plan and mentioned that they are considering switching to a competitor due to pricing concerns. The sales agent tried to offer a discount, but the customer remained non-committal.",
+  "risk": {
+    "score": 4,
+    "explanation": "The customer's explicit mention of switching to a competitor and the lack of a decisive response to the discount offer indicate a high risk of churn."
+  }
+  "handling" : "Sales agent handled the situation proactively, listenined to the customers needs, and offered a good discount"
+}
