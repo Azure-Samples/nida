@@ -14,6 +14,7 @@ param azureOpenaiResourceName string = 'nida'
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
+param azureOpenAiEmbedding string = 'text-embedding-ada-002'
 param searchServiceName string = 'nida-aisearchh'
 
 param functionName string = 'nida-func-${uniqueString(resourceGroup().id)}'
@@ -169,6 +170,10 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
             {
               name: 'AZURE_AUDIO_MODEL'
               value: audioDeployment.name
+            }
+            {
+              name: 'AZURE_OPENAI_EMBEDDING_MODEL'
+              value: embeddingDeployment.name
             }
             {
               name: 'AZURE_SEARCH_ENDPOINT'
@@ -347,6 +352,26 @@ resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
       name: 'gpt-4o-audio-preview'
       format: 'OpenAI'
       version: '2024-12-17'
+    }
+    versionUpgradeOption: 'OnceCurrentVersionExpired'
+  }
+}
+
+  // Define the OpenAI deployment
+// putting dependency on whisper deployment just so that they deploy sequentially
+resource embeddingDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+name: azureOpenAiEmbedding
+  parent: openai
+  dependsOn: [ audioDeployment ]
+  sku: {
+    name: 'Standard'
+    capacity: 80
+  }
+  properties: {
+    model: {
+      name: azureOpenAiEmbedding
+      format: 'OpenAI'
+      version: '2'
     }
     versionUpgradeOption: 'OnceCurrentVersionExpired'
   }
