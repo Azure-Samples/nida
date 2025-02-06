@@ -13,7 +13,7 @@ def get_transcription_model():
         if config and "Transcription" in config:
             return config["Transcription"]
     except Exception:
-        return  os.getenv("AZURE_WHISPER_MODEL")
+        return  os.getenv("AZURE_AUDIO_MODEL")
 
 transcription_model = get_transcription_model()
    
