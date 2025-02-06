@@ -299,7 +299,7 @@ resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024
   parent: openai
   sku: {
     name: 'GlobalStandard'
-    capacity: 1
+    capacity: 30
   }
   properties: {
     model: {
@@ -340,7 +340,7 @@ resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
   dependsOn: [ whisperDeployment ]
   sku: {
     name: 'GlobalStandard'
-    capacity: 8
+    capacity: 80
   }
   properties: {
     model: {
