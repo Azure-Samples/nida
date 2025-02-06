@@ -1,18 +1,25 @@
 param name string
 param location string = resourceGroup().location
 param tags object = {}
+param uniqueId string
+param prefix string
 
-param identityName string
-param containerRegistryName string
+param userAssignedIdentityResourceId string // param containerRegistryName string
+param userAssignedIdentityClientId string
+param userAssignedPrincipaLId string
 param containerAppsEnvironmentName string
 param applicationInsightsName string
-param exists bool
-
+param containerRegistry string = '${prefix}acr${uniqueId}'
 param azureOpenaiResourceName string = 'nida' 
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
-param searchServiceName string = 'nida-aisearch'
+param searchServiceName string = 'nida-aisearchh'
+
+param functionName string = 'nida-func-${uniqueString(resourceGroup().id)}'
+param funcContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+param mainContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+
 
 @description('Custom subdomain name for the OpenAI resource (must be unique in the region)')
 param customSubDomainName string
@@ -34,40 +41,13 @@ var env = map(filter(appSettingsArray, i => i.?secret == null), i => {
   value: i.value
 })
 
-resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-  name: identityName
-  location: location
-}
 
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
-  name: containerRegistryName
-}
-
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-11-02-preview' existing = {
   name: containerAppsEnvironmentName
 }
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
   name: applicationInsightsName
-}
-
-resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: containerRegistry
-  name: guid(subscription().id, resourceGroup().id, identity.id, 'acrPullRole')
-  properties: {
-    roleDefinitionId:  subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
-    principalType: 'ServicePrincipal'
-    principalId: identity.properties.principalId
-  }
-}
-
-module fetchLatestImage '../modules/fetch-container-image.bicep' = {
-  name: '${name}-fetch-image'
-  params: {
-    exists: exists
-    name: name
-  }
 }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
@@ -82,18 +62,48 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   }
 }
 
+resource queueServices 'Microsoft.Storage/storageAccounts/queueServices@2023-05-01' = {
+  parent: storageAccount
+  name: 'default'
+}
+// Cointainer for the storage account
+resource storageQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-05-01' = {
+  name: 'integration-queue'
+  parent: queueServices
+}
+
+resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
+  parent: storageAccount
+  name: 'default'
+}
+
+// Cointainer for the storage account
+resource storageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-04-01' = {
+  name: 'mainproject'
+  parent: blobServices
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
 resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   name: name
   location: location
   tags: union(tags, {'azd-service-name':  'src' })
-  dependsOn: [ acrPullRole ]
+  // dependsOn: [ acrPullRole ]
   identity: {
     type: 'UserAssigned'
-    userAssignedIdentities: { '${identity.id}': {} }
+    userAssignedIdentities: { '${userAssignedIdentityResourceId}': {} }
   }
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
+      registries: [
+        {
+          server: '${containerRegistry}.azurecr.io'
+          identity: userAssignedIdentityResourceId
+        }
+      ]
       activeRevisionsMode: 'Single'
       ingress:  {
         external: true
@@ -103,12 +113,6 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
           affinity: 'sticky'
       }
       }
-      registries: [
-        {
-          server: '${containerRegistryName}.azurecr.io'
-          identity: identity.id
-        }
-      ]
       secrets: union([
       ],
       map(secrets, secret => {
@@ -119,7 +123,7 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
     template: {
       containers: [
         {
-          image: fetchLatestImage.outputs.?containers[?0].?image ?? 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          image: mainContainerImage
           name: 'main'
           env: union([
             {
@@ -140,7 +144,7 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
             }
             {
               name: 'AZURE_CLIENT_ID'
-              value: identity.properties.clientId
+              value: userAssignedIdentityClientId
             }
             {
               name: 'PORT'
@@ -149,6 +153,14 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
             {
               name: 'STORAGE_ACCOUNT_NAME'
               value: storageAccount.name
+            }
+            {
+              name: 'STORAGE_QUEUE_NAME'
+              value: storageQueue.name
+            }
+            {
+              name: 'DEFAULT_CONTAINER'
+              value: storageContainer.name
             }
             {
               name: 'AZURE_WHISPER_MODEL'
@@ -183,6 +195,66 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   }
 }
 
+
+resource functionContainerApp 'Microsoft.App/containerApps@2023-05-02-preview' = {
+  name: functionName
+  location: location
+  tags: union(tags, {'azd-service-name':  'functions' })
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${userAssignedIdentityResourceId}': {} }
+  }
+  properties: {
+    managedEnvironmentId: containerAppsEnvironment.id
+    configuration: {
+      registries: [
+        {
+          server: '${containerRegistry}.azurecr.io'
+          identity: userAssignedIdentityResourceId
+        }
+      ]
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: false
+        targetPort: 80
+        transport: 'auto'
+      }
+    }
+    template: {
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+      containers: [
+        {
+          name: 'function'
+          image: funcContainerImage
+          resources: {
+            cpu: 1
+            memory: '2Gi'
+          }
+          env: [
+            // https://learn.microsoft.com/en-us/answers/questions/1225865/unable-to-get-a-user-assigned-managed-identity-wor
+            { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
+            {
+              name: 'STORAGE_ACCOUNT_NAME'
+              value: storageAccount.name
+            }
+            {
+              name: 'STORAGE_QUEUE_NAME'
+              value: storageQueue.name
+            }
+            {
+              name: 'DEFAULT_CONTAINER'
+              value: storageContainer.name
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
 // Deploy the Azure Cognitive Search service
 resource searchService 'Microsoft.Search/searchServices@2024-06-01-preview' = {
   name: searchServiceName
@@ -190,7 +262,7 @@ resource searchService 'Microsoft.Search/searchServices@2024-06-01-preview' = {
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${identity.id}': {}
+      '${userAssignedIdentityResourceId}': {}
     }
   }
   sku: {
@@ -227,7 +299,7 @@ resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024
   parent: openai
   sku: {
     name: 'GlobalStandard'
-    capacity: 30
+    capacity: 1
   }
   properties: {
     model: {
@@ -247,7 +319,7 @@ resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@202
   dependsOn: [ openaideployment ]
   sku: {
     name: 'Standard'
-    capacity: 3
+    capacity: 1
   }
   properties: {
     model: {
@@ -268,7 +340,7 @@ resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
   dependsOn: [ whisperDeployment ]
   sku: {
     name: 'GlobalStandard'
-    capacity: 80
+    capacity: 8
   }
   properties: {
     model: {
@@ -311,10 +383,10 @@ resource userSessionPoolRoleAssignment 'Microsoft.Authorization/roleAssignments@
 } 
 
 resource appSessionPoolRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(dynamicsession.id, identity.id, 'Azure Container Apps Session Executor')
+  name: guid(dynamicsession.id, userAssignedIdentityResourceId, 'Azure Container Apps Session Executor')
   scope: dynamicsession
   properties: {
-    principalId: identity.properties.principalId
+    principalId: userAssignedPrincipaLId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0fb8eba5-a2bb-4abe-b1c1-49dfad359bb0')
   }
@@ -330,10 +402,10 @@ resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-
 } 
 
 resource appOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(openai.id, identity.id, 'Cognitive Services OpenAI User')
+  name: guid(openai.id, userAssignedIdentityResourceId, 'Cognitive Services OpenAI User')
   scope: openai
   properties: {
-    principalId: identity.properties.principalId
+    principalId: userAssignedPrincipaLId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
   }
@@ -342,36 +414,69 @@ resource appOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-0
 // (Replace the roleDefinitionId with the proper built-in role ID for your scenario.)
 resource searchRoleAssignmentContrib 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   // Generate a deterministic GUID based on inputs.
-  name: guid(searchService.id, identity.id, 'Search Index Data Contributor')
+  name: guid(searchService.id, userAssignedIdentityResourceId, 'Search Index Data Contributor')
   scope: searchService
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')
-    principalId: identity.properties.principalId
+    principalId: userAssignedPrincipaLId
     principalType: 'ServicePrincipal'
   }
 }
 
 resource searchRoleAssignmentIndexer 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   // Generate a deterministic GUID based on inputs.
-  name: guid(searchService.id, identity.id, 'Search Service Contributor')
+  name: guid(searchService.id, userAssignedIdentityResourceId, 'Search Service Contributor')
   scope: searchService
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
-    principalId: identity.properties.principalId
+    principalId: userAssignedPrincipaLId
     principalType: 'ServicePrincipal'
   }
 }
 
 resource storageBlobDataContributorRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, identity.id, 'StorageBlobDataContributor')
+  name: guid(storageAccount.id, userAssignedIdentityResourceId, 'StorageBlobDataContributor')
   scope: storageAccount
   properties: {
-    principalId: identity.properties.principalId
+    principalId: userAssignedPrincipaLId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
     )
+  }
+}
+
+resource storageQueueDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, userAssignedIdentityResourceId, 'Storage Queue Data Message Sender')
+  scope: storageAccount
+  properties: {
+    principalId: userAssignedPrincipaLId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' 
+    )
+  }
+}
+
+resource queueRoleAssignmentUser 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(storageAccount.id, userPrincipalId,'Storage Queue Data Reader')
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '19e7f393-937e-4f77-808e-94535e297925')
+    principalId: userPrincipalId
+    principalType: 'User'
+  }
+}
+
+resource storageAccountContributorRoleAssignmentUser 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(storageAccount.id, userPrincipalId, 'storageAccountContributor')
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')
+    principalId: userPrincipalId
+    principalType: 'User'
   }
 }
 

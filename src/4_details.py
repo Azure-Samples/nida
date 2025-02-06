@@ -63,7 +63,7 @@ st.markdown(
 )
 
 def display_ai_evaluation(ground_truth, param_key, ai_evaluation):
-    st.markdown("#### LLM Results")
+    st.markdown("#### GenAI Results")
     # Always show the AI score
     if not ground_truth or not ground_truth.get(param_key):
         st.markdown(

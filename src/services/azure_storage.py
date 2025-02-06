@@ -158,8 +158,6 @@ def upload_audio_to_blob(file):
 
 def upload_prompt_to_blob(file):
     return upload_blob(file, file.name, PROMPT_FOLDER)
-
-
     
 def download_audio_to_local_file(blob_name):
     return download_blob_to_local_file(blob_name, AUDIO_FOLDER, "./tmp/" + blob_name)

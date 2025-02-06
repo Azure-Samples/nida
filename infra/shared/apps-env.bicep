@@ -4,11 +4,18 @@ param tags object = {}
 
 param logAnalyticsWorkspaceName string
 param applicationInsightsName string = ''
+param userAssignedIdentityResourceId string
 
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2022-10-01' = {
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-11-02-preview' = {
   name: name
   location: location
   tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentityResourceId}': {}
+    }
+  }
   properties: {
     appLogsConfiguration: {
       destination: 'log-analytics'

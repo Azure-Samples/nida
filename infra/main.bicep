@@ -24,7 +24,6 @@ param environmentName string
 ]) // limit to regions where Dynamic sessions are available as of 2024-11-29
 param location string
 
-param srcExists bool
 @secure()
 param srcDefinition object
 
@@ -44,7 +43,7 @@ var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(rg.id, environmentName, location))
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
-  name: 'rg-nida-${uniqueString(environmentName, location)}'
+  name: 'rg-nidat-${uniqueString(environmentName, location)}'
   location: location
   tags: tags
 }
@@ -71,14 +70,17 @@ module dashboard './shared/dashboard-web.bicep' = {
   scope: rg
 }
 
-module registry './shared/registry.bicep' = {
-  name: 'registry'
-  params: {
-    location: location
-    tags: tags
-    name: '${abbrs.containerRegistryRegistries}${resourceToken}'
-  }
+
+var uniqueId = uniqueString(rg.id)
+param prefix string = 'dev'
+
+module uami './modules/uami.bicep' = {
+  name: 'uami'
   scope: rg
+  params: {
+    identityName: '${abbrs.managedIdentityUserAssignedIdentities}nida-${resourceToken}'
+    location: location
+  }
 }
 
 module appsEnv './shared/apps-env.bicep' = {
@@ -87,10 +89,23 @@ module appsEnv './shared/apps-env.bicep' = {
     name: '${abbrs.appManagedEnvironments}${resourceToken}'
     location: location
     tags: tags
+    userAssignedIdentityResourceId: uami.outputs.identityId
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     logAnalyticsWorkspaceName: monitoring.outputs.logAnalyticsWorkspaceName
   }
   scope: rg
+}
+
+
+module acrModule './modules/acr.bicep' = {
+  name: 'acr'
+  scope: rg
+  params: {
+    uniqueId: uniqueId
+    prefix: prefix
+    userAssignedIdentityPrincipalId: uami.outputs.principalId
+    location: location
+  }
 }
 
 module src './app/src.bicep' = {
@@ -98,19 +113,25 @@ module src './app/src.bicep' = {
   params: {
     name: 'nida'
     location: location
+    uniqueId: uniqueId
+    prefix: prefix
+    userAssignedIdentityResourceId: uami.outputs.identityId
+    userAssignedIdentityClientId: uami.outputs.clientId
+    userAssignedPrincipaLId: uami.outputs.principalId
     tags: tags
-    identityName: '${abbrs.managedIdentityUserAssignedIdentities}nida-${resourceToken}'
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     containerAppsEnvironmentName: appsEnv.outputs.name
-    containerRegistryName: registry.outputs.name
-    exists: srcExists
     appDefinition: srcDefinition
     userPrincipalId: principalId
     customSubDomainName: 'nida-${resourceToken}'
+    containerRegistry: acrModule.outputs.acrName
   }
   scope: rg
 }
 
-output AZURE_CONTAINER_REGISTRY_ENDPOINT string = registry.outputs.loginServer
 output AZURE_OPENAI_ENDPOINT string = src.outputs.azure_endpoint
 output POOL_MANAGEMENT_ENDPOINT string = src.outputs.pool_endpoint
+output AZURE_RESOURCE_GROUP string = rg.name
+output AZURE_TENANT_ID string = subscription().tenantId
+output AZURE_USER_ASSIGNED_IDENTITY_ID string = uami.outputs.identityId
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = acrModule.outputs.acrEndpoint

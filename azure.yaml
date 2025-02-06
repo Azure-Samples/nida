@@ -9,4 +9,12 @@ services:
         host: containerapp
         language: python
         docker:
-            path: Dockerfile
+            path: main.dockerfile
+            remoteBuild: true
+    functions:
+        project: functions
+        host: containerapp
+        language: python
+        docker:
+            path: func.dockerfile
+            remoteBuild: true
