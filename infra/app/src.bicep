@@ -94,10 +94,14 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
+      activeRevisionsMode: 'Single'
       ingress:  {
         external: true
         targetPort: 80
         transport: 'auto'
+        stickySessions: {
+          affinity: 'sticky'
+      }
       }
       registries: [
         {

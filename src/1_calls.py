@@ -15,17 +15,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-# ------------------------ MAIN APP LAYOUT ------------------------ #
-
-# Add a sidebar for quick navigation or info
-st.sidebar.title("ℹ️ About This App")
-st.sidebar.write(
-    "This application allows you to **upload**, **manage**, **transcribe**, and **analyze** audio files using Azure Storage and LLM-based analysis."
-)
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Navigation**")
-st.sidebar.markdown("1. Calls\n2. Personas\n3. GenAI Analysis")
-
+# ------------------------ MAIN APP LAYOUT ------------------------ 
 # 1. Upload Files
 st.header("1. 🎧 Upload Files")
 st.markdown("Use the sections below to upload your audio files. All uploads are stored in Azure Blob Storage.")
