@@ -181,9 +181,9 @@ def create_or_update_index(index_name: str, sample_document: dict):
         )
         print(f"Creating or updating index '{index_name}'...")
         result = search_index_client.create_or_update_index(index)
-        print(f"Index '{result.name}' created or updated.")
+        return f"Index '{result.name}' created or updated.", True
     except Exception as e:
-        print(f"Failed to create/update the index: {e}")
+        return f"Failed to create/update the index: {e}", False
 
 # ------------------------------------------------------------------------------
 # 4) Load JSON Docs and Upsert
@@ -196,12 +196,14 @@ def load_json_into_azure_search(index_name, json_docs):
       3) Upsert to Azure Search with 'contentVector'.
     """
     if not json_docs:
-        print("No documents to process.")
-        return
+        
+        return "No documents to process.", False
 
     # 6a) Create/Update the index with the first doc as a template
     sample_doc = json_docs[0]
-    create_or_update_index(index_name, sample_doc)
+    message, result = create_or_update_index(index_name, sample_doc)
+    if not result:
+        return message, False
 
     # 6b) Create a SearchClient
     search_client = SearchClient(
@@ -249,10 +251,9 @@ def load_json_into_azure_search(index_name, json_docs):
     try:
         results = search_client.upload_documents(documents=actions)
         print(f"Upserted {len(actions)} documents into index '{index_name}'.")
-        return True
+        return "All document interested", True
     except Exception as e:
-        print(f"Failed to upload documents: {e}")
-        return False
+        return f"Failed to upload documents: {e}", False
 
 def search_query(index_name, query):
     """

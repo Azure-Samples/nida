@@ -15,12 +15,12 @@ param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
 param azureOpenAiEmbedding string = 'text-embedding-ada-002'
-param searchServiceName string = 'nida-aisearchh'
 
 param functionName string = 'nida-func-${uniqueString(resourceGroup().id)}'
 param funcContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 param mainContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
+param searchServiceName string
 
 @description('Custom subdomain name for the OpenAI resource (must be unique in the region)')
 param customSubDomainName string
@@ -29,7 +29,7 @@ param customSubDomainName string
 param appDefinition object
 
 @description('Principal ID of the user executing the deployment')
-param userPrincipalId string
+param currentUser string
 
 var appSettingsArray = filter(array(appDefinition.settings), i => i.name != '')
 var secrets = map(filter(appSettingsArray, i => i.?secret != null), i => {
@@ -260,32 +260,6 @@ resource functionContainerApp 'Microsoft.App/containerApps@2023-05-02-preview' =
   }
 }
 
-// Deploy the Azure Cognitive Search service
-resource searchService 'Microsoft.Search/searchServices@2024-06-01-preview' = {
-  name: searchServiceName
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${userAssignedIdentityResourceId}': {}
-    }
-  }
-  sku: {
-    name: 'standard'
-  }
-  properties: {
-    replicaCount: 1
-    partitionCount: 1
-    hostingMode: 'default'
-    authOptions: {
-      aadOrApiKey: {
-        aadAuthFailureMode: 'http403'
-      }
-    }
-    publicNetworkAccess: 'Enabled'
-  }
-}
-
 resource openai 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   name: azureOpenaiResourceName
   location: location
@@ -399,10 +373,10 @@ resource dynamicsession 'Microsoft.App/sessionPools@2024-02-02-preview' = {
 }
 
 resource userSessionPoolRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(dynamicsession.id, userPrincipalId, 'Azure Container Apps Session Executor')
+  name: guid(dynamicsession.id, currentUser, 'Azure Container Apps Session Executor')
   scope: dynamicsession
   properties: {
-    principalId: userPrincipalId
+    principalId: currentUser
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0fb8eba5-a2bb-4abe-b1c1-49dfad359bb0')
   }
 } 
@@ -418,10 +392,10 @@ resource appSessionPoolRoleAssignment 'Microsoft.Authorization/roleAssignments@2
 }
 
 resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(openai.id, userPrincipalId, 'Cognitive Services OpenAI User')
+  name: guid(openai.id, currentUser, 'Cognitive Services OpenAI User')
   scope: openai
   properties: {
-    principalId: userPrincipalId
+    principalId: currentUser
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
   }
 } 
@@ -436,28 +410,6 @@ resource appOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-0
   }
 }
 
-// (Replace the roleDefinitionId with the proper built-in role ID for your scenario.)
-resource searchRoleAssignmentContrib 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  // Generate a deterministic GUID based on inputs.
-  name: guid(searchService.id, userAssignedIdentityResourceId, 'Search Index Data Contributor')
-  scope: searchService
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')
-    principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-resource searchRoleAssignmentIndexer 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  // Generate a deterministic GUID based on inputs.
-  name: guid(searchService.id, userAssignedIdentityResourceId, 'Search Service Contributor')
-  scope: searchService
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
-    principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
-  }
-}
 
 resource storageBlobDataContributorRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, userAssignedIdentityResourceId, 'StorageBlobDataContributor')
@@ -486,21 +438,21 @@ resource storageQueueDataContributor 'Microsoft.Authorization/roleAssignments@20
 }
 
 resource queueRoleAssignmentUser 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name: guid(storageAccount.id, userPrincipalId,'Storage Queue Data Reader')
+  name: guid(storageAccount.id, currentUser,'Storage Queue Data Reader')
   scope: storageAccount
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '19e7f393-937e-4f77-808e-94535e297925')
-    principalId: userPrincipalId
+    principalId: currentUser
     principalType: 'User'
   }
 }
 
 resource storageBlobContributorRoleAssignmentUser 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name: guid(storageAccount.id, userPrincipalId, 'StorageBlobDataContributor')
+  name: guid(storageAccount.id, currentUser, 'StorageBlobDataContributor')
   scope: storageAccount
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
-    principalId: userPrincipalId
+    principalId: currentUser
     principalType: 'User'
   }
 }

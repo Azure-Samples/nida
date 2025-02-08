@@ -108,6 +108,18 @@ module acrModule './modules/acr.bicep' = {
   }
 }
 
+module searchModule './modules/search.bicep' = {
+  name: 'search'
+  scope: rg
+  params: {
+    searchServiceName: 'nida-aisearch'
+    userAssignedIdentityResourceId: uami.outputs.identityId
+    userAssignedPrincipaLId: uami.outputs.principalId
+    currentUser: principalId
+    location: location
+  }
+}
+
 module src './app/src.bicep' = {
   name: 'nida'
   params: {
@@ -122,9 +134,10 @@ module src './app/src.bicep' = {
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     containerAppsEnvironmentName: appsEnv.outputs.name
     appDefinition: srcDefinition
-    userPrincipalId: principalId
+    currentUser: principalId
     customSubDomainName: 'nida-${resourceToken}'
     containerRegistry: acrModule.outputs.acrName
+    searchServiceName: searchModule.outputs.searchServiceName
   }
   scope: rg
 }

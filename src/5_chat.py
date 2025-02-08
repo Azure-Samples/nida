@@ -115,11 +115,11 @@ if st.button("🗂️ Index Your Calls"):
         if not all_jsons:
             st.warning("⚠️ No analysis documents found for indexing.")
         else:
-            created = azure_search.load_json_into_azure_search(index_name, all_jsons)
+            message, created = azure_search.load_json_into_azure_search(index_name, all_jsons)
             if created:
                 st.success(f"✅ Index '{index_name}' created successfully.")
             else:
-                st.error(f"❌ Error creating index '{index_name}'.")
+                st.error(f"❌ Error creating index '{message}'.")
 
 
 # ---------------- Chat Area ----------------
