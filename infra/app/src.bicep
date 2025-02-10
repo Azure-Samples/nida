@@ -228,15 +228,15 @@ resource functionContainerApp 'Microsoft.App/containerApps@2023-05-02-preview' =
     template: {
       scale: {
         minReplicas: 1
-        maxReplicas: 1
+        maxReplicas: 10
       }
       containers: [
         {
           name: 'function'
           image: funcContainerImage
           resources: {
-            cpu: 1
-            memory: '2Gi'
+            cpu: json('2.0')
+            memory: '4.0Gi'
           }
           env: [
             // https://learn.microsoft.com/en-us/answers/questions/1225865/unable-to-get-a-user-assigned-managed-identity-wor
@@ -245,6 +245,23 @@ resource functionContainerApp 'Microsoft.App/containerApps@2023-05-02-preview' =
               name: 'STORAGE_ACCOUNT_NAME'
               value: storageAccount.name
             }
+            {
+              name: 'AzureWebJobsStorage__accountName'
+              value: storageAccount.name
+            }
+            { 
+              name: 'AzureWebJobsStorage__credentials'
+              value: 'managedidentity'
+           }
+           { 
+            name: 'AzureWebJobsStorage__clientId'
+            value: userAssignedIdentityClientId
+            }
+           { 
+            name: 'AzureWebJobsStorage__managedIdentityResourceId'
+            value: userAssignedIdentityResourceId
+            }
+ 
             {
               name: 'STORAGE_QUEUE_NAME'
               value: storageQueue.name
@@ -419,12 +436,38 @@ resource storageBlobDataContributorRA 'Microsoft.Authorization/roleAssignments@2
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
-      'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+      'ba92f5b4-2d11-453d-a403-e96b0029c9fe' 
+    )
+  }
+}
+
+resource storageBlobDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, userAssignedIdentityResourceId, 'StorageBlobDataOwner')
+  scope: storageAccount
+  properties: {
+    principalId: userAssignedPrincipaLId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'b7e6dc6d-f1e8-4753-8033-0f276bb0955b' 
     )
   }
 }
 
 resource storageQueueDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, userAssignedIdentityResourceId, 'storageQueueDataContributor')
+  scope: storageAccount
+  properties: {
+    principalId: userAssignedPrincipaLId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '974c5e8b-45b9-4653-ba55-5f855dd0fb88' 
+    )
+  }
+}
+
+resource storageQueueDataSender 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, userAssignedIdentityResourceId, 'Storage Queue Data Message Sender')
   scope: storageAccount
   properties: {
@@ -463,3 +506,5 @@ output uri string = 'https://${app.properties.configuration.ingress.fqdn}'
 output id string = app.id
 output azure_endpoint string = openai.properties.endpoint
 output pool_endpoint string = dynamicsession.properties.poolManagementEndpoint
+output storageAccountName string = storageAccount.name
+output storageAccountEndpoint string = storageAccount.properties.primaryEndpoints.blob

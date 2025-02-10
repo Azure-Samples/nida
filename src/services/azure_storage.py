@@ -318,3 +318,11 @@ def upload_eval_to_blob(name, prompt, evaluation):
         return upload_blob(data_to_upload, eval_path, full_prefix)
     except Exception as e:
         return f"An error occurred while uploading eval: {e}"
+    
+
+def get_uri(blob_name: str, prefix: str = "", container_name: str = DEFAULT_CONTAINER):
+    """
+    Get the URI for a blob in a container.
+    """
+    client = get_blob_client(blob_name, prefix, container_name)
+    return client.url
