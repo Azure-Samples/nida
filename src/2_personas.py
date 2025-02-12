@@ -6,7 +6,7 @@ import streamlit as st
 from datetime import datetime
 
 # Adjust path as needed to import your modules
-from services import azure_storage, azure_oai, azure_queue
+from services import azure_storage, azure_oai
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -50,7 +50,7 @@ def analyze_blob(persona_prompt, blob_name):
     )
 
     persona = persona_prompt.split(".")[0]
-    azure_queue.send_message_to_queue(
+    azure_storage.send_message_to_queue(
         json.dumps({
             "blob_uri": azure_storage.get_uri(blob_name,persona ),
             "persona": persona,

@@ -4,6 +4,7 @@ import json
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
+from azure.storage.queue import QueueClient
 
 load_dotenv()
 
@@ -18,11 +19,13 @@ TRANSCRIPTION_FOLDER = os.getenv("TRANSCRIPTION_FOLDER", "transcriptions")
 EVAL_FOLDER = os.getenv("EVAL_FOLDER", "evals")
 PROMPT_FOLDER = os.getenv("PROMPT_FOLDER", "prompts")
 LLM_ANALYSIS_FOLDER = os.getenv("LLM_ANALYSIS_FOLDER", "llmanalysis")
+STORAGE_QUEUE_NAME = os.getenv("STORAGE_QUEUE_NAME", "integration-queue")
 
 # Build URL to your blob storage & create credential + service client
-account_url = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net"
+blob_account_url = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net"
+queue_account_url = f"https://{STORAGE_ACCOUNT_NAME}.queue.core.windows.net"
 credential = DefaultAzureCredential()
-blob_service_client = BlobServiceClient(account_url=account_url, credential=credential)
+blob_service_client = BlobServiceClient(account_url=blob_account_url, credential=credential)
 
 
 def ensure_container_exists(container_name: str = DEFAULT_CONTAINER):
@@ -326,3 +329,32 @@ def get_uri(blob_name: str, prefix: str = "", container_name: str = DEFAULT_CONT
     """
     client = get_blob_client(blob_name, prefix, container_name)
     return client.url
+
+
+def ensure_queue_exists(queue_name: str = STORAGE_QUEUE_NAME):
+    """
+    Ensure the specified queue exists. Creates it if it does not.
+    """
+    queue_client = QueueClient(account_url=queue_account_url, credential=credential, queue_name=queue_name)
+    try:
+        queue_client.create_queue()
+    except Exception as e:
+        if 'QUEUE_ALREADY_EXISTS' in str(e):
+            pass
+        else:
+            raise e
+
+def get_queue_client(queue_name: str = STORAGE_QUEUE_NAME):
+    """
+    Return the QueueClient for the given queue name, ensuring it exists.
+    """
+    ensure_queue_exists(queue_name)
+    return QueueClient(account_url=queue_account_url, credential=credential, queue_name=queue_name)
+
+def send_message_to_queue(message: str, queue_name: str = STORAGE_QUEUE_NAME):
+    """
+    Send a message to the specified queue.
+    """
+    queue_client = get_queue_client(queue_name)
+    response = queue_client.send_message(message)
+    return f"Sent message to queue '{queue_name}' with message id: {response.id}"

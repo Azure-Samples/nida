@@ -34,13 +34,13 @@ def check_azure_openai():
         return False, f"Error calling Azure OpenAI endpoint: {str(e)}"
 
 
-def check_azure_blob():
+def check_azure_storage():
     """
     Returns True if we can connect to the Blob Storage account and list containers or blobs, False otherwise.
     """
     try:
-        storage_account_name = os.getenv("STORAGE_ACCOUNT_NAME")
-        default_container = os.getenv("DEFAULT_CONTAINER", "mainproject")
+        storage_account_name = azure_storage.STORAGE_ACCOUNT_NAME
+        default_container = azure_storage.DEFAULT_CONTAINER
 
         if not storage_account_name or not default_container:
             return False, "Missing storage account name or default container in environment variables."
@@ -48,6 +48,9 @@ def check_azure_blob():
         # Check if main container exists by calling ensure_container_exists
         azure_storage.ensure_container_exists()
         azure_storage.list_blobs()
+        
+        # check queue access
+        azure_storage.ensure_queue_exists()
 
     except Exception as e:
         error_message = str(e)
@@ -57,7 +60,7 @@ def check_azure_blob():
             error_message += "\nAlso make sure your your Storage Account networking settings are correct."
         
         return False, f"Error connecting to Azure Blob Storage: {error_message}"
-    return True, f"Successfully connected to container '{azure_storage.DEFAULT_CONTAINER}' in account '{azure_storage.STORAGE_ACCOUNT_NAME}'."
+    return True, f"Successfully connected to container '{azure_storage.DEFAULT_CONTAINER}' and queue '{azure_storage.STORAGE_QUEUE_NAME}' in account '{azure_storage.STORAGE_ACCOUNT_NAME}'."
 
 def check_local_config():
     """
@@ -143,13 +146,14 @@ with st.expander("Check Azure OpenAI Endpoint", expanded=True):
     else:
         st.error(openai_message)
 
-# Check Azure Blob Storage
-with st.expander("Check Azure Blob Storage", expanded=True):
-    blob_ok, blob_message = check_azure_blob()
+# Check Azure Storage connection
+with st.expander("Check Azure Storage (Blob and Queue)", expanded=True):
+    blob_ok, storage_message = check_azure_storage()
     if blob_ok:
-        st.success(blob_message)
+        st.success(storage_message)
     else:
-        st.error(blob_message)
+        st.error(storage_message)
+
 
 # Check Azure Search
 with st.expander("Check Azure Search", expanded=True):
