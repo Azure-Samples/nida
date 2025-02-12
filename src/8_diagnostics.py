@@ -81,7 +81,6 @@ def check_local_config():
     
     optional_vars = [
         "DEFAULT_CONTAINER",
-        "INDEX_NAME",
         "AUDIO_FOLDER",
         "TRANSCRIPTION_FOLDER",
         "EVAL_FOLDER",
@@ -103,8 +102,9 @@ def check_local_config():
 def check_azure_search():
     ## check if the search endpoint is working
     try:
-        result = azure_search.index_exists("test")
-        return True, "Azure Search is working."
+        index_client = azure_search.get_search_index_client()
+        indexes = [i for i in index_client.list_indexes()]
+        return True, f"Azure Search {azure_search.AZURE_SEARCH_ENDPOINT} is working."
     except Exception as e:
         return False, f"Error calling Azure Search: {str(e)}"
 

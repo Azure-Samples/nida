@@ -42,7 +42,7 @@ Then visit the `azurecontainerapps` URL that is returned. In the UI, you can upl
 
 1. `cd src`
 1. `cp .env.sample .env` and update `.env` with your valid keys, endpoint, and settings
-1. Make sure you have the relevant permissions on the Storage Account (`Storage Blob Data Contributor` and `Storage Queue Data Contributor`), Azure OpenAI resource (`Cognitive Services OpenAI User`) and Azure Search (`Search Service Contributor`)
+1. Make sure you have the relevant permissions on the Storage Account (`Storage Blob Data Contributor` and `Storage Queue Data Contributor`), Azure OpenAI resource (`Cognitive Services OpenAI User`) and Azure Search (`Search Service Contributor`, `Search Index Data Contributor` and make sure to enabled RBAC-access under `Keys`)
 1. `pip install -r requirements.txt`
 1. `streamlit run main.py`
 1. Then head to the Diagnostics page and make sure all tests pass.

@@ -3,6 +3,7 @@ from services import azure_oai
 import json
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
+
 import re
 
 from azure.search.documents import SearchClient
@@ -25,14 +26,25 @@ from azure.search.documents.indexes.models import (
 load_dotenv()
 
 azure_credentials = DefaultAzureCredential()
-# ------------------------------------------------------------------------------
-# 1) Environment Variables / Constants
-# ------------------------------------------------------------------------------
+
 AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT")
 if not AZURE_SEARCH_ENDPOINT:
     raise ValueError("Please provide a valid Azure Search endpoint.")
 
-AZURE_INDEX_NAME = os.getenv("AZURE_INDEX_NAME", "my-index")
+def get_search_index_client():
+    search_index_client = SearchIndexClient(
+        endpoint=AZURE_SEARCH_ENDPOINT, 
+        credential=azure_credentials
+    )
+    return search_index_client
+
+def get_search_client(index_name):
+    search_client = SearchClient(
+        endpoint=AZURE_SEARCH_ENDPOINT, 
+        index_name=index_name,
+        credential=azure_credentials,
+    )
+    return search_client
 
 # ------------------------------------------------------------------------------
 # 2) Helpers to Flatten JSON and Infer Fields
@@ -172,18 +184,17 @@ def create_or_update_index(index_name: str, sample_document: dict):
         vector_search=vector_search,
         semantic_search=semantic_search
     )
-
+    
+       
     # Create or update index
     try:
-        search_index_client = SearchIndexClient(
-            AZURE_SEARCH_ENDPOINT, 
-            azure_credentials,
-        )
+        search_index_client = get_search_index_client()
         print(f"Creating or updating index '{index_name}'...")
         result = search_index_client.create_or_update_index(index)
         return f"Index '{result.name}' created or updated.", True
     except Exception as e:
-        return f"Failed to create/update the index: {e}", False
+        print(f"Failed to create/update the index: {str(e)}")
+        return f"Failed to create/update the index: {str(e)}", False
 
 # ------------------------------------------------------------------------------
 # 4) Load JSON Docs and Upsert
@@ -196,7 +207,6 @@ def load_json_into_azure_search(index_name, json_docs):
       3) Upsert to Azure Search with 'contentVector'.
     """
     if not json_docs:
-        
         return "No documents to process.", False
 
     # 6a) Create/Update the index with the first doc as a template
@@ -206,11 +216,7 @@ def load_json_into_azure_search(index_name, json_docs):
         return message, False
 
     # 6b) Create a SearchClient
-    search_client = SearchClient(
-        endpoint=AZURE_SEARCH_ENDPOINT, 
-        index_name=index_name,
-        credential=azure_credentials
-    )
+    search_client = get_search_client(index_name)
 
     # 6c) Convert each doc to final structure for upserting
     actions = []
@@ -259,12 +265,7 @@ def search_query(index_name, query):
     """
     Search Azure Search index with a query string.
     """
-    search_client = SearchClient(
-        endpoint=AZURE_SEARCH_ENDPOINT, 
-        index_name=index_name,
-        credential=azure_credentials
-    )
-
+    search_client = get_search_client(index_name)
     try:
         query_vector = azure_oai.get_embedding(query)
 
@@ -283,23 +284,9 @@ def index_exists(index_name):
     """
     Check if an index exists in Azure Search.
     """
-    search_index_client = SearchIndexClient(
-        endpoint=AZURE_SEARCH_ENDPOINT, 
-        credential=azure_credentials
-    )
+    search_index_client = get_search_index_client()
     try:
         index = search_index_client.get_index(index_name)
         return index is not None
     except Exception as e:
         return False
-# ------------------------------------------------------------------------------
-# 7) Example Usage
-# ------------------------------------------------------------------------------
-if __name__ == "__main__":
-
-    print(AZURE_SEARCH_ENDPOINT)
-    with open("test.json", "r") as f:
-        data = json.load(f)  # list of dicts
-        print(data)
-
-    load_json_into_azure_search(AZURE_INDEX_NAME, [data])
