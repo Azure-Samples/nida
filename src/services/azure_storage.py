@@ -339,7 +339,7 @@ def ensure_queue_exists(queue_name: str = STORAGE_QUEUE_NAME):
     try:
         queue_client.create_queue()
     except Exception as e:
-        if 'QUEUE_ALREADY_EXISTS' in str(e):
+        if 'QUEUE_ALREADY_EXISTS' in str(e) or 'QueueAlreadyExists' in str(e):
             pass
         else:
             raise e

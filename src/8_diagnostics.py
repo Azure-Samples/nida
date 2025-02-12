@@ -77,7 +77,7 @@ def check_local_config():
     ]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
-        return False, f"Missing environment variables: {', '.join(missing_vars)}"
+        return False, f"Missing required environment variables: {', '.join(missing_vars)}"
     
     optional_vars = [
         "DEFAULT_CONTAINER",
@@ -89,13 +89,10 @@ def check_local_config():
         "AZURE_OPENAI_API_VERSION"
     ]
     
-    # make sure that optional_vars and required_vars are not empty
-    all_vars = required_vars + optional_vars
-    
     # check all_vars, and create a list of incomplete_vars, which includes all vars that are not length 1 or longer
-    incomplete_vars = [var for var in all_vars if not os.getenv(var) or len(os.getenv(var)) < 1]
+    incomplete_vars = [var for var in optional_vars if os.getenv(var) and len(os.getenv(var)) < 1]
     if incomplete_vars:
-        return False, f"Incorrectly set environment variables: {', '.join(incomplete_vars)}"
+        return False, f"Incorrectly optional environment variables: {', '.join(incomplete_vars)}"
     
     return True, "All required environment variables are set."
 

@@ -65,18 +65,17 @@ resource queueServices 'Microsoft.Storage/storageAccounts/queueServices@2023-05-
   parent: storageAccount
   name: 'default'
 }
-// Cointainer for the storage account
-resource storageQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-05-01' = {
-  name: 'integration-queue'
-  parent: queueServices
-}
 
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
   parent: storageAccount
   name: 'default'
 }
 
-// Cointainer for the storage account
+resource storageQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-05-01' = {
+  parent: queueServices
+  name: 'integration-queue'
+}
+
 resource storageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-04-01' = {
   name: 'mainproject'
   parent: blobServices
