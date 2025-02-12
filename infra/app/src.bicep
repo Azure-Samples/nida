@@ -16,8 +16,6 @@ param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
 param azureOpenAiEmbedding string = 'text-embedding-ada-002'
 
-param functionName string = 'nida-func-${uniqueString(resourceGroup().id)}'
-param funcContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 param mainContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 param searchServiceName string
@@ -200,82 +198,6 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   }
 }
 
-
-resource functionContainerApp 'Microsoft.App/containerApps@2023-05-02-preview' = {
-  name: functionName
-  location: location
-  tags: union(tags, {'azd-service-name':  'functions' })
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: { '${userAssignedIdentityResourceId}': {} }
-  }
-  properties: {
-    managedEnvironmentId: containerAppsEnvironment.id
-    configuration: {
-      registries: [
-        {
-          server: '${containerRegistry}.azurecr.io'
-          identity: userAssignedIdentityResourceId
-        }
-      ]
-      activeRevisionsMode: 'Single'
-      ingress: {
-        external: false
-        targetPort: 80
-        transport: 'auto'
-      }
-    }
-    template: {
-      scale: {
-        minReplicas: 1
-        maxReplicas: 10
-      }
-      containers: [
-        {
-          name: 'function'
-          image: funcContainerImage
-          resources: {
-            cpu: json('2.0')
-            memory: '4.0Gi'
-          }
-          env: [
-            // https://learn.microsoft.com/en-us/answers/questions/1225865/unable-to-get-a-user-assigned-managed-identity-wor
-            { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
-            {
-              name: 'STORAGE_ACCOUNT_NAME'
-              value: storageAccount.name
-            }
-            {
-              name: 'AzureWebJobsStorage__accountName'
-              value: storageAccount.name
-            }
-            { 
-              name: 'AzureWebJobsStorage__credentials'
-              value: 'managedidentity'
-           }
-           { 
-            name: 'AzureWebJobsStorage__clientId'
-            value: userAssignedIdentityClientId
-            }
-           { 
-            name: 'AzureWebJobsStorage__managedIdentityResourceId'
-            value: userAssignedIdentityResourceId
-            }
- 
-            {
-              name: 'STORAGE_QUEUE_NAME'
-              value: storageQueue.name
-            }
-            {
-              name: 'DEFAULT_CONTAINER'
-              value: storageContainer.name
-            }
-          ]
-        }
-      ]
-    }
-  }
-}
 
 resource openai 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   name: azureOpenaiResourceName
