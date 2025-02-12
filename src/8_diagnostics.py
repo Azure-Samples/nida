@@ -1,11 +1,8 @@
 import os
 import streamlit as st
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from azure.identity import DefaultAzureCredential
 from services import azure_storage
 from services import azure_oai
 
-token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")    
 
 def check_azure_openai():
     """
@@ -71,11 +68,33 @@ def check_local_config():
         "STORAGE_ACCOUNT_NAME",
         "AZURE_WHISPER_MODEL",
         "AZURE_SEARCH_ENDPOINT",
-        "AZURE_AUDIO_MODEL"
+        "AZURE_AUDIO_MODEL",
+        "AZURE_OPENAI_DEPLOYMENT_NAME",
+        "AZURE_OPENAI_EMBEDDING_MODEL"
     ]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
         return False, f"Missing environment variables: {', '.join(missing_vars)}"
+    
+    optional_vars = [
+        "DEFAULT_CONTAINER",
+        "INDEX_NAME",
+        "AUDIO_FOLDER",
+        "TRANSCRIPTION_FOLDER",
+        "EVAL_FOLDER",
+        "LLM_ANALYSIS_FOLDER",
+        "STORAGE_QUEUE_NAME",
+        "AZURE_OPENAI_API_VERSION"
+    ]
+    
+    # make sure that optional_vars and required_vars are not empty
+    all_vars = required_vars + optional_vars
+    
+    # check all_vars, and create a list of incomplete_vars, which includes all vars that are not length 1 or longer
+    incomplete_vars = [var for var in all_vars if not os.getenv(var) or len(os.getenv(var)) < 1]
+    if incomplete_vars:
+        return False, f"Incorrectly set environment variables: {', '.join(incomplete_vars)}"
+    
     return True, "All required environment variables are set."
 
 def check_azure_search():
