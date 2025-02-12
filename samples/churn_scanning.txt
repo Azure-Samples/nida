@@ -14,7 +14,7 @@ Based on the transcript, please output your analysis in the following JSON forma
     "score": "An integer from 1 to 5, where 5 indicates a very high risk of churn",
     "explanation": "A detailed explanation of why this score was assigned, referencing specific points from the call."
   }
-  "handling" : "how did the sales agent handle the sitution"
+  "handling" : "how did the sales agent handle the situation"
 }
 
 Ensure that your output is valid JSON and that it only includes the keys specified above. 
@@ -26,5 +26,5 @@ Focus on identifying any language that suggests the customer might consider leav
     "score": 4,
     "explanation": "The customer's explicit mention of switching to a competitor and the lack of a decisive response to the discount offer indicate a high risk of churn."
   }
-  "handling" : "Sales agent handled the situation proactively, listenined to the customers needs, and offered a good discount"
+  "handling" : "Sales agent handled the situation proactively, listened to the customers needs, and offered a good discount"
 }

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONTAINER = os.getenv("DEFAULT_CONTAINER")
 
-STORAGE_QUEUE_NAME = os.getenv("STORAGE_QUEUE_NAME")
+STORAGE_QUEUE_NAME = os.getenv("STORAGE_QUEUE_NAME", "integration-queue")
 
 @app.blob_trigger(arg_name="myblob", path=DEFAULT_CONTAINER +"/{blobname}", connection="AzureWebJobsStorage")
 @app.queue_output(arg_name="outputQueue", queue_name=STORAGE_QUEUE_NAME, connection="AzureWebJobsStorage")

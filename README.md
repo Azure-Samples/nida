@@ -25,7 +25,7 @@ The project consists of a multi-stage pipeline to process calls:
 | Model | Deloyment Type | Quota |
 |---------|-------|------|
 | gpt-4o (2024-11-20) | GlobalStandard | 30k TPM |
-| whisper-001 | Standard | 3 RPM |
+| whisper-001 | Standard | 1 RPM |
 | gpt-4o-audio-preview (2024-12-17) | GlobalStandard | 80k TPM |
 
 For example `swedencentral`
@@ -36,18 +36,16 @@ For example `swedencentral`
 1. `az login`
 1. `azd up`
 
-Then visit the `azurecontainerapps` URL that is returned. In the UI, you can upload the sample call `samples/test.mp3` and create a first persona from `samples/marketing_sentiment_details.txt`.
+Then visit the `azurecontainerapps` URL that is returned. In the UI, you can upload the sample calls from `samples/audios/*.wav` and create a first persona from `samples/marketing_sentiment_details.txt`.
 
 ### Local deployment (manually)
 
 1. `cd src`
 1. `cp .env.sample .env` and update `.env` with your valid keys, endpoint, and settings
+1. Make sure you have the relevant permissions on the Storage Account (`Storage Blob Data Contributor` and `Storage Queue Data Contributor`), Azure OpenAI resource (`Cognitive Services OpenAI User`) and Azure Search (`Search Service Contributor`)
 1. `pip install -r requirements.txt`
 1. `streamlit run main.py`
-
-### Local deployment (via `docker`)
-
-`TODO`
+1. Then head to the Diagnostics page and make sure all tests pass.
 
 ## Overview
 

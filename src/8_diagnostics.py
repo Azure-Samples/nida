@@ -1,51 +1,33 @@
 import os
 import streamlit as st
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from openai import AzureOpenAI
-from azure.storage.blob import BlobServiceClient
 from azure.identity import DefaultAzureCredential
-
-    
+from services import azure_storage
+from services import azure_oai
 
 token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")    
-
 
 def check_azure_openai():
     """
     Returns True if the Azure OpenAI endpoint responds successfully to a test prompt, False otherwise.
     """
+
     try:
-        # Set up environment-based credentials for Azure OpenAI
-        AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-        AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-11-01-preview")  # Provide a default if needed
-
-        AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-
-        oai_client = AzureOpenAI(
-            api_version= AZURE_OPENAI_API_VERSION,
-            azure_endpoint= AZURE_OPENAI_ENDPOINT,
-            azure_ad_token_provider=token_provider
-        )
-   
-        messages = [
-        {
-        "role": "system",
-        "content": "You give time"
-        },
-        {
-        "role": "user",
-         "content": "what is the weather" }
-        ]
-        # Make a simple test call
+        oai_client = azure_oai.get_oai_client()
         response = oai_client.chat.completions.create(
-                messages=messages,
-                model=AZURE_OPENAI_DEPLOYMENT_NAME,   
-                temperature=0.2,
-                top_p=1,
-                max_tokens=5000,
-                stop=None,
-            )  
-
+            messages = [
+                {
+                    "role": "system",
+                    "content": "Just return, 'Azure OpenAI connection works!'"
+                },
+                {
+                    "role": "user",
+                    "content": f"Reply as instructed"
+                }
+            ],
+            model=azure_oai.AZURE_OPENAI_DEPLOYMENT_NAME
+        )
+        
         # If we successfully got a response back, let's assume it's working.
         if response.choices[0].message.content:
             return True, response.choices[0].message.content
@@ -62,24 +44,23 @@ def check_azure_blob():
     try:
         storage_account_name = os.getenv("STORAGE_ACCOUNT_NAME")
         default_container = os.getenv("DEFAULT_CONTAINER", "mainproject")
-        # Use DefaultAzureCredential for authentication
-
-        credential = DefaultAzureCredential()
 
         if not storage_account_name or not default_container:
             return False, "Missing storage account name or default container in environment variables."
 
-        # Create the BlobServiceClient object
-        blob_service_client = BlobServiceClient(account_url=f"https://{storage_account_name}.blob.core.windows.net", credential=credential)
-
-        # Attempt to get a container client and list blobs
-        container_client = blob_service_client.get_container_client(default_container)
-        _ = list(container_client.list_blobs())  # Just to test a simple operation
-
-        return True, f"Successfully connected to container '{default_container}' in account '{storage_account_name}'."
+        # Check if main container exists by calling ensure_container_exists
+        azure_storage.ensure_container_exists()
+        azure_storage.list_blobs()
 
     except Exception as e:
-        return False, f"Error connecting to Azure Blob Storage: {str(e)}"
+        error_message = str(e)
+        
+        if "AuthorizationFailure" in error_message:
+            error_message += "\n\nMake sure you have Storage Blob Data Contributor and Storage Queue Data Contributor permission on the storage account."
+            error_message += "\nAlso make sure your your Storage Account networking settings are correct."
+        
+        return False, f"Error connecting to Azure Blob Storage: {error_message}"
+    return True, f"Successfully connected to container '{azure_storage.DEFAULT_CONTAINER}' in account '{azure_storage.STORAGE_ACCOUNT_NAME}'."
 
 def check_local_config():
     """
