@@ -121,6 +121,7 @@ module acrModule './modules/acr.bicep' = {
     uniqueId: uniqueId
     prefix: prefix
     userAssignedIdentityPrincipalId: uami.outputs.principalId
+    currentUserT: currentUserType
     location: location
   }
 }
