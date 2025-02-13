@@ -21,7 +21,10 @@ AZURE_WHISPER_MODEL=os.environ["AZURE_WHISPER_MODEL"]
 AZURE_AUDIO_MODEL=os.getenv("AZURE_AUDIO_MODEL", "")
 
 AZURE_OPENAI_EMBEDDING_MODEL = os.getenv("AZURE_OPENAI_EMBEDDING_MODEL")
-EMBEDDING_DIM = 1536    # For text-embedding-ada-002
+if (AZURE_OPENAI_EMBEDDING_MODEL == 'text-embedding-ada-002'):
+    EMBEDDING_DIM = 1536    # For text-embedding-ada-002
+elif (AZURE_OPENAI_EMBEDDING_MODEL == 'text-embedding-3-large'):
+    EMBEDDING_DIM = 3072    # For text-embedding-3-large
 
 def get_oai_client():
     oai_client = AzureOpenAI(

@@ -10,18 +10,17 @@ param userAssignedPrincipaLId string
 param containerAppsEnvironmentName string
 param applicationInsightsName string
 param containerRegistry string = '${prefix}acr${uniqueId}'
-param azureOpenaiResourceName string = 'nida' 
+
+param openAiEndpoint string
+
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
-param azureOpenAiEmbedding string = 'text-embedding-ada-002'
+param azureOpenAiEmbedding string = 'text-embedding-3-large'
 
 param mainContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 param searchServiceName string
-
-@description('Custom subdomain name for the OpenAI resource (must be unique in the region)')
-param customSubDomainName string
 
 @secure()
 param appDefinition object
@@ -130,11 +129,11 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
             }
             {
               name: 'AZURE_OPENAI_ENDPOINT'
-              value: openai.properties.endpoint
+              value: openAiEndpoint
             }
             {
               name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
-              value: openaideployment.name
+              value: azureOpenaiDeploymentName
             }
             {
               name: 'POOL_MANAGEMENT_ENDPOINT'
@@ -162,15 +161,15 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
             }
             {
               name: 'AZURE_WHISPER_MODEL'
-              value: whisperDeployment.name
+              value: azureWhisperDeploymentName
             }
             {
               name: 'AZURE_AUDIO_MODEL'
-              value: audioDeployment.name
+              value: azureOpenaiAudioDeploymentName
             }
             {
               name: 'AZURE_OPENAI_EMBEDDING_MODEL'
-              value: embeddingDeployment.name
+              value: azureOpenAiEmbedding
             }
             {
               name: 'AZURE_SEARCH_ENDPOINT'
@@ -196,99 +195,6 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
     }
   }
 }
-
-
-resource openai 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
-  name: azureOpenaiResourceName
-  location: location
-  sku: {
-    name: 'S0'
-  }
-  kind: 'OpenAI'
-  properties: {
-    customSubDomainName: customSubDomainName
-  }
-}
-
-// Define the OpenAI deployment
-resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
-  name: azureOpenaiDeploymentName
-  parent: openai
-  sku: {
-    name: 'GlobalStandard'
-    capacity: 30
-  }
-  properties: {
-    model: {
-      name: 'gpt-4o'
-      format: 'OpenAI'
-      version: '2024-11-20'
-    }
-    versionUpgradeOption: 'OnceCurrentVersionExpired'
-  }
-}
-
-// Define the Whisper deployment
-// putting dependency on openai deployment just so that they deploy sequentially
-resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
-  name: azureWhisperDeploymentName
-  parent: openai
-  dependsOn: [ openaideployment ]
-  sku: {
-    name: 'Standard'
-    capacity: 1
-  }
-  properties: {
-    model: {
-      // 'whisper' or 'whisper-base', etc. (Exact name depends on Azure OpenAI availability)
-      name: 'whisper'
-      format: 'OpenAI'
-      version: '001'
-    }
-    // The rest depends on your configuration or scale settings
-  }
-}
-
-// Define the OpenAI deployment
-// putting dependency on whisper deployment just so that they deploy sequentially
-resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
-  name: azureOpenaiAudioDeploymentName
-  parent: openai
-  dependsOn: [ whisperDeployment ]
-  sku: {
-    name: 'GlobalStandard'
-    capacity: 80
-  }
-  properties: {
-    model: {
-      name: 'gpt-4o-audio-preview'
-      format: 'OpenAI'
-      version: '2024-12-17'
-    }
-    versionUpgradeOption: 'OnceCurrentVersionExpired'
-  }
-}
-
-  // Define the OpenAI deployment
-// putting dependency on whisper deployment just so that they deploy sequentially
-resource embeddingDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
-name: azureOpenAiEmbedding
-  parent: openai
-  dependsOn: [ audioDeployment ]
-  sku: {
-    name: 'Standard'
-    capacity: 80
-  }
-  properties: {
-    model: {
-      name: azureOpenAiEmbedding
-      format: 'OpenAI'
-      version: '2'
-    }
-    versionUpgradeOption: 'OnceCurrentVersionExpired'
-  }
-}
-
 
 resource dynamicsession 'Microsoft.App/sessionPools@2024-02-02-preview' = {
   name: 'sessionPool'
@@ -329,24 +235,6 @@ resource appSessionPoolRoleAssignment 'Microsoft.Authorization/roleAssignments@2
   }
 }
 
-resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(openai.id, currentUser, 'Cognitive Services OpenAI User')
-  scope: openai
-  properties: {
-    principalId: currentUser
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
-  }
-} 
-
-resource appOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(openai.id, userAssignedIdentityResourceId, 'Cognitive Services OpenAI User')
-  scope: openai
-  properties: {
-    principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
-  }
-}
 
 
 resource storageBlobDataContributorRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -425,7 +313,6 @@ output defaultDomain string = containerAppsEnvironment.properties.defaultDomain
 output name string = app.name
 output uri string = 'https://${app.properties.configuration.ingress.fqdn}'
 output id string = app.id
-output azure_endpoint string = openai.properties.endpoint
 output pool_endpoint string = dynamicsession.properties.poolManagementEndpoint
 output storageAccountName string = storageAccount.name
 output storageAccountEndpoint string = storageAccount.properties.primaryEndpoints.blob

@@ -30,14 +30,18 @@ param srcDefinition object
 @description('Id of the user or app to assign application roles')
 param principalId string
 
-// Tags that should be applied to all resources.
-// 
-// Note that 'azd-service-name' tags should be applied separately to service host resources.
-// Example usage:
-//   tags: union(tags, { 'azd-service-name': <service name in azure.yaml> })
 var tags = {
   'azd-env-name': environmentName
 }
+
+@minLength(1)
+@description('Name of the Azure OpenAI resource')
+param openAIName string
+
+@minLength(1)
+@description('Name of the Azure Resource Group where the OpenAI resource is located')
+param openAIResourceGroupName string
+
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(rg.id, environmentName, location))
@@ -83,6 +87,16 @@ module uami './modules/uami.bicep' = {
   }
 }
 
+module openAI './modules/openAI.bicep' = {
+  name: 'openAI'
+  scope: resourceGroup(openAIResourceGroupName)
+  params: {
+    openAIName: openAIName
+    userAssignedIdentityPrincipalId: uami.outputs.principalId
+    currentUser: principalId
+  }
+}
+
 module appsEnv './shared/apps-env.bicep' = {
   name: 'apps-env'
   params: {
@@ -120,6 +134,8 @@ module searchModule './modules/search.bicep' = {
   }
 }
 
+
+
 module src './app/src.bicep' = {
   name: 'nida'
   params: {
@@ -131,18 +147,18 @@ module src './app/src.bicep' = {
     userAssignedIdentityClientId: uami.outputs.clientId
     userAssignedPrincipaLId: uami.outputs.principalId
     tags: tags
+    openAiEndpoint: openAI.outputs.openAIEndpoint
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     containerAppsEnvironmentName: appsEnv.outputs.name
     appDefinition: srcDefinition
     currentUser: principalId
-    customSubDomainName: 'nida-${resourceToken}'
     containerRegistry: acrModule.outputs.acrName
     searchServiceName: searchModule.outputs.searchServiceName
   }
   scope: rg
 }
 
-output AZURE_OPENAI_ENDPOINT string = src.outputs.azure_endpoint
+output AZURE_OPENAI_ENDPOINT string = openAI.outputs.openAIEndpoint
 output POOL_MANAGEMENT_ENDPOINT string = src.outputs.pool_endpoint
 output AZURE_RESOURCE_GROUP string = rg.name
 output AZURE_TENANT_ID string = subscription().tenantId
