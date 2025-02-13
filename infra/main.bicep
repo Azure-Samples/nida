@@ -92,7 +92,6 @@ module openAI './modules/openAI.bicep' = {
   scope: resourceGroup(openAIResourceGroupName)
   params: {
     openAIName: openAIName
-    userAssignedIdentityPrincipalId: uami.outputs.principalId
   }
 }
 
