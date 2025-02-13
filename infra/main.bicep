@@ -112,7 +112,7 @@ module searchModule './modules/search.bicep' = {
   name: 'search'
   scope: rg
   params: {
-    searchServiceName: 'nida-aisearch'
+    searchServiceName: '${abbrs.searchSearchServices}nida-${resourceToken}'
     userAssignedIdentityResourceId: uami.outputs.identityId
     userAssignedPrincipaLId: uami.outputs.principalId
     currentUser: principalId

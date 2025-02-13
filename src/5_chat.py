@@ -64,6 +64,7 @@ def load_llm_analysis(prompt_file):
         list: A list of JSON documents.
     """
     llm_analysis = azure_storage.list_llmanalysis(prompt_file)
+    print(f"Found {len(llm_analysis)} analysis documents.")
     all_jsons = []
     if llm_analysis:
         for file in llm_analysis:
@@ -98,29 +99,21 @@ st.session_state.selected_prompt_txt_prev = selected_prompt_txt
 persona_context = azure_storage.read_prompt(selected_prompt_txt)
 
 # When the user clicks the button, load the JSON docs and create/re-index the search index.
-if st.button("🗂️ Index Your Calls"):
-    index_name = selected_prompt_txt.split('.')[0]
-    if azure_search.index_exists(index_name):
-        if st.button(f"🔄 Index '{index_name}' exists. Click to re-index."):
-            all_jsons = load_llm_analysis(selected_prompt_txt)
-            if not all_jsons:
-                st.warning("⚠️ No analysis documents found for re-indexing.")
-            else:
-                azure_search.load_json_into_azure_search(index_name, all_jsons)
-                st.success(f"✅ Index '{index_name}' re-indexed successfully.")
-        else:
-            st.info(f"ℹ️ Using existing index '{index_name}'.")
-    else:
-        all_jsons = load_llm_analysis(selected_prompt_txt)
-        if not all_jsons:
-            st.warning("⚠️ No analysis documents found for indexing.")
-        else:
-            message, created = azure_search.load_json_into_azure_search(index_name, all_jsons)
-            if created:
-                st.success(f"✅ Index '{index_name}' created successfully.")
-            else:
-                st.error(f"❌ Error creating index '{message}'.")
 
+index_name = selected_prompt_txt.split('.')[0]
+
+button_text = "🔄 Re-Index your Calls" if azure_search.index_exists(index_name) else "🗂️ Index Your Calls"
+
+if st.button(button_text):
+    all_jsons = load_llm_analysis(selected_prompt_txt)
+    if not all_jsons or len(all_jsons) == 0:
+        st.warning("⚠️ No analysis documents found for re-indexing.")
+    else:
+        message, success = azure_search.load_json_into_azure_search(index_name, all_jsons)
+        if success:
+            st.success(f"✅ Index '{index_name}' created/re-indexed successfully.")
+        else:
+            st.error(f"❌ Error creating/updating index: '{message}'.")
 
 # ---------------- Chat Area ----------------
 st.header("💬 Chat with Calls")

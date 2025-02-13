@@ -14,17 +14,22 @@ AZURE_OPENAI_ENDPOINT=os.getenv("AZURE_OPENAI_ENDPOINT")
 if not AZURE_OPENAI_ENDPOINT:
     raise ValueError("AZURE_OPENAI_ENDPOINT is not set.")
 
-
 AZURE_OPENAI_DEPLOYMENT_NAME=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-11-01-preview")
 
 AZURE_WHISPER_MODEL=os.environ["AZURE_WHISPER_MODEL"]
 AZURE_AUDIO_MODEL=os.getenv("AZURE_AUDIO_MODEL", "")
 
-
-AZURE_OPENAI_EMBEDDING_MODEL = os.getenv("AZURE_OPENAI_EMBEDDING_MODEL","text-embedding-ada-002")
+AZURE_OPENAI_EMBEDDING_MODEL = os.getenv("AZURE_OPENAI_EMBEDDING_MODEL")
 EMBEDDING_DIM = 1536    # For text-embedding-ada-002
 
+def get_oai_client():
+    oai_client = AzureOpenAI(
+        api_version= AZURE_OPENAI_API_VERSION,
+        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
+        azure_ad_token_provider=token_provider
+    )
+    return oai_client
 
 def build_o1_prompt(prompt_file, transcript):
     
@@ -69,11 +74,7 @@ def build_prompt(prompt, transcript):
 def call_o1(prompt_file, transcript, deployment):
     messages = build_o1_prompt(prompt_file=prompt_file, transcript=transcript)  
 
-    oai_client = AzureOpenAI(
-        api_version= AZURE_OPENAI_API_VERSION,
-        azure_endpoint= "NA", 
-        azure_ad_token_provider=token_provider
-        )
+    oai_client = get_oai_client()
 
     completion = oai_client.chat.completions.create(
         model=deployment,   
@@ -86,11 +87,7 @@ def call_llm(prompt, transcript, deployment=AZURE_OPENAI_DEPLOYMENT_NAME, respon
 
     messages = build_prompt(prompt=prompt, transcript=transcript)  
 
-    oai_client = AzureOpenAI(
-        api_version= AZURE_OPENAI_API_VERSION,
-        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
-        azure_ad_token_provider=token_provider
-        )
+    oai_client = get_oai_client()
    
     if response_format is not None:
         result = oai_client.beta.chat.completions.parse(model=deployment, 
@@ -102,12 +99,12 @@ def call_llm(prompt, transcript, deployment=AZURE_OPENAI_DEPLOYMENT_NAME, respon
     else:
         completion = oai_client.chat.completions.create(
             messages=messages,
-            model=deployment,   
+            model=deployment,
             temperature=0.2,
             top_p=1,
             max_tokens=5000,
             stop=None,
-        )  
+        )
 
         return clean_json_string(completion.choices[0].message.content)
 
@@ -117,11 +114,7 @@ def clean_json_string(json_string):
     return cleaned_string.strip()
 
 def transcribe_whisper(audio_file, prompt):
-    oai_client = AzureOpenAI(
-        api_version= AZURE_OPENAI_API_VERSION,
-        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
-        azure_ad_token_provider=token_provider
-        )
+    oai_client = get_oai_client()
    
     prompt_content =open(prompt, "r").read()
     result = oai_client.audio.transcriptions.create(
@@ -133,11 +126,7 @@ def transcribe_whisper(audio_file, prompt):
     return result
 
 def transcribe_gpt4_audio(audio_file):
-    oai_client = AzureOpenAI(
-        api_version= AZURE_OPENAI_API_VERSION,
-        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
-        azure_ad_token_provider=token_provider
-        )
+    oai_client = get_oai_client()
    
     print(f"Transcribing with gpt-4o-audio {audio_file}")
     file = open(audio_file, "rb")
@@ -188,11 +177,7 @@ def get_embedding(query_text):
 
 def chat_with_oai(messages, deployment=AZURE_OPENAI_DEPLOYMENT_NAME):
 
-    oai_client = AzureOpenAI(
-        api_version= AZURE_OPENAI_API_VERSION,
-        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
-        azure_ad_token_provider=token_provider
-        )
+    oai_client = get_oai_client()
    
     completion = oai_client.chat.completions.create(
         messages=messages,
@@ -225,11 +210,7 @@ def get_insights(summaries):
     What are the main topics? Issues? Insights and recommendations
 
     """
-    oai_client = AzureOpenAI(
-        api_version= AZURE_OPENAI_API_VERSION,
-        azure_endpoint= AZURE_OPENAI_ENDPOINT, 
-        azure_ad_token_provider=token_provider
-        )
+    oai_client = get_oai_client()
     
     messages = [
         {

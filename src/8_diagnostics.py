@@ -1,51 +1,30 @@
 import os
 import streamlit as st
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from openai import AzureOpenAI
-from azure.storage.blob import BlobServiceClient
-from azure.identity import DefaultAzureCredential
-
-    
-
-token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")    
+from services import azure_storage
+from services import azure_oai
 
 
 def check_azure_openai():
     """
     Returns True if the Azure OpenAI endpoint responds successfully to a test prompt, False otherwise.
     """
+
     try:
-        # Set up environment-based credentials for Azure OpenAI
-        AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-        AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-11-01-preview")  # Provide a default if needed
-
-        AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-
-        oai_client = AzureOpenAI(
-            api_version= AZURE_OPENAI_API_VERSION,
-            azure_endpoint= AZURE_OPENAI_ENDPOINT,
-            azure_ad_token_provider=token_provider
-        )
-   
-        messages = [
-        {
-        "role": "system",
-        "content": "You give time"
-        },
-        {
-        "role": "user",
-         "content": "what is the weather" }
-        ]
-        # Make a simple test call
+        oai_client = azure_oai.get_oai_client()
         response = oai_client.chat.completions.create(
-                messages=messages,
-                model=AZURE_OPENAI_DEPLOYMENT_NAME,   
-                temperature=0.2,
-                top_p=1,
-                max_tokens=5000,
-                stop=None,
-            )  
-
+            messages = [
+                {
+                    "role": "system",
+                    "content": "Just return, 'Azure OpenAI connection works!'"
+                },
+                {
+                    "role": "user",
+                    "content": f"Reply as instructed"
+                }
+            ],
+            model=azure_oai.AZURE_OPENAI_DEPLOYMENT_NAME
+        )
+        
         # If we successfully got a response back, let's assume it's working.
         if response.choices[0].message.content:
             return True, response.choices[0].message.content
@@ -55,31 +34,33 @@ def check_azure_openai():
         return False, f"Error calling Azure OpenAI endpoint: {str(e)}"
 
 
-def check_azure_blob():
+def check_azure_storage():
     """
     Returns True if we can connect to the Blob Storage account and list containers or blobs, False otherwise.
     """
     try:
-        storage_account_name = os.getenv("STORAGE_ACCOUNT_NAME")
-        default_container = os.getenv("DEFAULT_CONTAINER", "mainproject")
-        # Use DefaultAzureCredential for authentication
-
-        credential = DefaultAzureCredential()
+        storage_account_name = azure_storage.STORAGE_ACCOUNT_NAME
+        default_container = azure_storage.DEFAULT_CONTAINER
 
         if not storage_account_name or not default_container:
             return False, "Missing storage account name or default container in environment variables."
 
-        # Create the BlobServiceClient object
-        blob_service_client = BlobServiceClient(account_url=f"https://{storage_account_name}.blob.core.windows.net", credential=credential)
-
-        # Attempt to get a container client and list blobs
-        container_client = blob_service_client.get_container_client(default_container)
-        _ = list(container_client.list_blobs())  # Just to test a simple operation
-
-        return True, f"Successfully connected to container '{default_container}' in account '{storage_account_name}'."
+        # Check if main container exists by calling ensure_container_exists
+        azure_storage.ensure_container_exists()
+        azure_storage.list_blobs()
+        
+        # check queue access
+        azure_storage.ensure_queue_exists()
 
     except Exception as e:
-        return False, f"Error connecting to Azure Blob Storage: {str(e)}"
+        error_message = str(e)
+        
+        if "AuthorizationFailure" in error_message:
+            error_message += "\n\nMake sure you have Storage Blob Data Contributor and Storage Queue Data Contributor permission on the storage account."
+            error_message += "\nAlso make sure your your Storage Account networking settings are correct."
+        
+        return False, f"Error connecting to Azure Blob Storage: {error_message}"
+    return True, f"Successfully connected to container '{azure_storage.DEFAULT_CONTAINER}' and queue '{azure_storage.STORAGE_QUEUE_NAME}' in account '{azure_storage.STORAGE_ACCOUNT_NAME}'."
 
 def check_local_config():
     """
@@ -90,18 +71,37 @@ def check_local_config():
         "STORAGE_ACCOUNT_NAME",
         "AZURE_WHISPER_MODEL",
         "AZURE_SEARCH_ENDPOINT",
-        "AZURE_AUDIO_MODEL"
+        "AZURE_AUDIO_MODEL",
+        "AZURE_OPENAI_DEPLOYMENT_NAME",
+        "AZURE_OPENAI_EMBEDDING_MODEL"
     ]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
-        return False, f"Missing environment variables: {', '.join(missing_vars)}"
+        return False, f"Missing required environment variables: {', '.join(missing_vars)}"
+    
+    optional_vars = [
+        "DEFAULT_CONTAINER",
+        "AUDIO_FOLDER",
+        "TRANSCRIPTION_FOLDER",
+        "EVAL_FOLDER",
+        "LLM_ANALYSIS_FOLDER",
+        "STORAGE_QUEUE_NAME",
+        "AZURE_OPENAI_API_VERSION"
+    ]
+    
+    # check all_vars, and create a list of incomplete_vars, which includes all vars that are not length 1 or longer
+    incomplete_vars = [var for var in optional_vars if os.getenv(var) and len(os.getenv(var)) < 1]
+    if incomplete_vars:
+        return False, f"Incorrectly optional environment variables: {', '.join(incomplete_vars)}"
+    
     return True, "All required environment variables are set."
 
 def check_azure_search():
     ## check if the search endpoint is working
     try:
-        result = azure_search.index_exists("test")
-        return True, "Azure Search is working."
+        index_client = azure_search.get_search_index_client()
+        indexes = [i for i in index_client.list_indexes()]
+        return True, f"Azure Search {azure_search.AZURE_SEARCH_ENDPOINT} is working."
     except Exception as e:
         return False, f"Error calling Azure Search: {str(e)}"
 
@@ -143,13 +143,14 @@ with st.expander("Check Azure OpenAI Endpoint", expanded=True):
     else:
         st.error(openai_message)
 
-# Check Azure Blob Storage
-with st.expander("Check Azure Blob Storage", expanded=True):
-    blob_ok, blob_message = check_azure_blob()
+# Check Azure Storage connection
+with st.expander("Check Azure Storage (Blob and Queue)", expanded=True):
+    blob_ok, storage_message = check_azure_storage()
     if blob_ok:
-        st.success(blob_message)
+        st.success(storage_message)
     else:
-        st.error(blob_message)
+        st.error(storage_message)
+
 
 # Check Azure Search
 with st.expander("Check Azure Search", expanded=True):
