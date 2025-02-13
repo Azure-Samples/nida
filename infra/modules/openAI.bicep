@@ -2,11 +2,9 @@ targetScope = 'resourceGroup'
 
 param openAIName string
 param userAssignedIdentityPrincipalId string
-param currentUserT string
 resource openAI 'Microsoft.CognitiveServices/accounts@2022-03-01' existing = {
   name: openAIName
 }
-
 
 // Assign the User Assigned Identity Contributor role to the Cosmos DB account
 resource openAIRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
@@ -15,7 +13,7 @@ resource openAIRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd') // Role definition ID for Cognitive Services OpenAI User
     principalId: userAssignedIdentityPrincipalId
-    principalType: currentUserT
+    principalType: 'ServicePrincipal'
   }
 }
 

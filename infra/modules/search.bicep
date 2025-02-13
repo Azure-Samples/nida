@@ -37,7 +37,7 @@ resource searchRoleAssignmentContrib 'Microsoft.Authorization/roleAssignments@20
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')
     principalId: userAssignedPrincipaLId
-    principalType: currentUserT
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -48,7 +48,7 @@ resource searchRoleAssignmentIndexer 'Microsoft.Authorization/roleAssignments@20
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
     principalId: userAssignedPrincipaLId
-    principalType: currentUserT
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -60,6 +60,7 @@ resource searchRoleAssignmentContribUser 'Microsoft.Authorization/roleAssignment
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')
     principalId: currentUser
+    principalType: currentUserT
   }
 }
 
@@ -70,6 +71,7 @@ resource searchRoleAssignmentIndexerUser 'Microsoft.Authorization/roleAssignment
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
     principalId: currentUser
+    principalType: currentUserT
   }
 }
 

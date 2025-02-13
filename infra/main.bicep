@@ -96,7 +96,6 @@ module openAI './modules/openAI.bicep' = {
   params: {
     openAIName: openAIName
     userAssignedIdentityPrincipalId: uami.outputs.principalId
-    currentUserT: currentUserType
   }
 }
 
@@ -121,7 +120,6 @@ module acrModule './modules/acr.bicep' = {
     uniqueId: uniqueId
     prefix: prefix
     userAssignedIdentityPrincipalId: uami.outputs.principalId
-    currentUserT: currentUserType
     location: location
   }
 }
