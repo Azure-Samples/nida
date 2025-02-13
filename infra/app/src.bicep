@@ -7,6 +7,7 @@ param prefix string
 param userAssignedIdentityResourceId string // param containerRegistryName string
 param userAssignedIdentityClientId string
 param userAssignedPrincipaLId string
+param currentUserT string
 param containerAppsEnvironmentName string
 param applicationInsightsName string
 param containerRegistry string = '${prefix}acr${uniqueId}'
@@ -230,7 +231,7 @@ resource appSessionPoolRoleAssignment 'Microsoft.Authorization/roleAssignments@2
   scope: dynamicsession
   properties: {
     principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
+    principalType: currentUserT
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0fb8eba5-a2bb-4abe-b1c1-49dfad359bb0')
   }
 }
@@ -242,7 +243,7 @@ resource storageBlobDataContributorRA 'Microsoft.Authorization/roleAssignments@2
   scope: storageAccount
   properties: {
     principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
+    principalType: currentUserT
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       'ba92f5b4-2d11-453d-a403-e96b0029c9fe' 
@@ -255,7 +256,7 @@ resource storageBlobDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-0
   scope: storageAccount
   properties: {
     principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
+    principalType: currentUserT
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       'b7e6dc6d-f1e8-4753-8033-0f276bb0955b' 
@@ -268,7 +269,7 @@ resource storageQueueDataContributor 'Microsoft.Authorization/roleAssignments@20
   scope: storageAccount
   properties: {
     principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
+    principalType: currentUserT
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       '974c5e8b-45b9-4653-ba55-5f855dd0fb88' 
@@ -281,7 +282,7 @@ resource storageQueueDataSender 'Microsoft.Authorization/roleAssignments@2022-04
   scope: storageAccount
   properties: {
     principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
+    principalType: currentUserT
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       'c6a89b2d-59bc-44d0-9896-0f6e12d7b80a' 

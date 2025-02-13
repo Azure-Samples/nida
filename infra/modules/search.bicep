@@ -1,6 +1,7 @@
 param searchServiceName string
 param userAssignedIdentityResourceId string // param containerRegistryName string
 param userAssignedPrincipaLId string
+param currentUserT string
 param currentUser string
 param location string = resourceGroup().location
 
@@ -36,7 +37,7 @@ resource searchRoleAssignmentContrib 'Microsoft.Authorization/roleAssignments@20
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')
     principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
+    principalType: currentUserT
   }
 }
 
@@ -47,7 +48,7 @@ resource searchRoleAssignmentIndexer 'Microsoft.Authorization/roleAssignments@20
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
     principalId: userAssignedPrincipaLId
-    principalType: 'ServicePrincipal'
+    principalType: currentUserT
   }
 }
 

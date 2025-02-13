@@ -42,6 +42,9 @@ param openAIName string
 @description('Name of the Azure Resource Group where the OpenAI resource is located')
 param openAIResourceGroupName string
 
+param runningOnGh string =''
+var currentUserType = empty(runningOnGh) ? 'User' : 'ServicePrincipal'
+
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(rg.id, environmentName, location))
@@ -92,6 +95,8 @@ module openAI './modules/openAI.bicep' = {
   scope: resourceGroup(openAIResourceGroupName)
   params: {
     openAIName: openAIName
+    userAssignedIdentityPrincipalId: uami.outputs.principalId
+    currentUserT: currentUserType
   }
 }
 
@@ -127,6 +132,7 @@ module searchModule './modules/search.bicep' = {
     searchServiceName: '${abbrs.searchSearchServices}nida-${resourceToken}'
     userAssignedIdentityResourceId: uami.outputs.identityId
     userAssignedPrincipaLId: uami.outputs.principalId
+    currentUserT: currentUserType
     currentUser: principalId
     location: location
   }
@@ -144,6 +150,7 @@ module src './app/src.bicep' = {
     userAssignedIdentityResourceId: uami.outputs.identityId
     userAssignedIdentityClientId: uami.outputs.clientId
     userAssignedPrincipaLId: uami.outputs.principalId
+    currentUserT: currentUserType
     tags: tags
     openAiEndpoint: openAI.outputs.openAIEndpoint
     applicationInsightsName: monitoring.outputs.applicationInsightsName
