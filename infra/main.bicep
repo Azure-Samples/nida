@@ -93,7 +93,6 @@ module openAI './modules/openAI.bicep' = {
   params: {
     openAIName: openAIName
     userAssignedIdentityPrincipalId: uami.outputs.principalId
-    currentUser: principalId
   }
 }
 
