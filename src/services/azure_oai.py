@@ -135,7 +135,7 @@ def transcribe_gpt4_audio(audio_file):
     file = open(audio_file, "rb")
     encoded_string = base64.b64encode(file.read()).decode('utf-8')
     file.close()
-
+    file_extension = os.path.splitext(audio_file)[1][1:]
     messages=[
         {
             "role": "user",
@@ -148,7 +148,7 @@ def transcribe_gpt4_audio(audio_file):
                     "type": "input_audio",
                     "input_audio": {
                         "data": encoded_string,
-                        "format": "wav"
+                        "format": file_extension
                     }
                 }
             ]
