@@ -114,19 +114,17 @@ def convert_value(x):
 
 def get_eval_data(selected_prompt_name):
     llm_analysis = azure_storage.list_llmanalysis(selected_prompt_name)
-# Parse the JSON input
     all_jsons = []
     if llm_analysis:
         for file in llm_analysis:
             try:
                 data = azure_storage.read_llm_analysis(selected_prompt_name, file)
                 ground_truth = azure_storage.read_eval(selected_prompt_name, file)
-                all_jsons.append(data)
                 for key, value in ground_truth.items():
                     if key.lower() == "call id":
                         continue
                     data[f"{key}.gt"] = value
-                all_jsons.append(data)
+                    all_jsons.append(data) # we should ignore rows that don't have ground truth
             except Exception as e:
                 st.error(f"Error reading {file}: {e}")
     return all_jsons
@@ -199,8 +197,6 @@ if config_data is None:
     st.error(f"Could not find a config file for prompt '{selected_eval_prompt}'. Please define KPIs first.")
     st.stop()
 
-# The config looks like {"Parameter1": "Description...", "Parameter2": "..."}
-# We'll treat the keys of that dict as required columns, plus "Call ID"
 required_columns = list(config_data) + ["Call ID"]
 st.write(f"**Required columns** for this evaluation file: {required_columns}")
 
@@ -261,23 +257,17 @@ if len(eval_data) == 0:
     st.stop()
 
 aggregated = aggregate_data(eval_data)
-
-# This handles columns of different lengths by converting values to Pandas Series.
+st.markdown(f"**Total records that have ground truth**: {len(aggregated)}")
 df = pd.DataFrame({k: pd.Series(v) for k, v in aggregated.items()})
 
 # Define the parameters to evaluate.
 parameters = azure_storage.read_prompt_config(selected_eval_prompt) or []
-
-# Create a column layout: one column per parameter.
 cols = st.columns(len(parameters))
 
 for i, param in enumerate(parameters):
-    # According to your CSV format:
-    #   Ground truth is in the column "<Parameter>"
-    #   AI prediction is in the column "<Parameter> - Score"
     pred_col = f"{param}.score"
     truth_col = f"{param}.gt"
-    
+
     with cols[i]:
         st.write(f"### {param}")
         if pred_col not in df.columns or truth_col not in df.columns:
@@ -299,7 +289,6 @@ for i, param in enumerate(parameters):
             # Compute accuracy (works regardless of averaging).
             acc = accuracy_score(y_true, y_pred)
 
-           # Decide on the averaging method:
             # If the first elements in both series are booleans, assume binary classification.
             # Otherwise (e.g. if integers are used), assume it's not binary.
             if isinstance(y_true.iloc[0], bool) and isinstance(y_pred.iloc[0], bool):
