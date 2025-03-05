@@ -34,10 +34,10 @@ var tags = {
   'azd-env-name': environmentName
 }
 
-@description('Name of the Azure OpenAI resource')
+@description('Name of the existing Azure OpenAI resource')
 param openAIName string
 
-@description('Name of the Azure Resource Group where the OpenAI resource is located')
+@description('Name of  the existing Azure Resource Group where the OpenAI resource is located')
 param openAIResourceGroupName string
 
 param runningOnGh string =''
@@ -88,15 +88,27 @@ module uami './modules/uami.bicep' = {
   }
 }
 
-module openAI './modules/openAI.bicep' = {
+module openAI './modules/openAI.bicep' = if(empty(openAIResourceGroupName)) {
   name: 'openAI'
-  scope: rg
+  scope: rg 
   params: {
     openAIName: openAIName
     userAssignedIdentityPrincipalId: uami.outputs.principalId
     location: location
     currentUser: principalId
     customSubDomainName: 'nidaa-${resourceToken}'
+  }
+}
+
+module openAIExisting './modules/openAI.bicep' = if(!empty(openAIResourceGroupName)) {
+  name: 'openAIExisting'
+  scope: resourceGroup(openAIResourceGroupName) 
+  params: {
+    openAIName: openAIName
+    userAssignedIdentityPrincipalId: uami.outputs.principalId
+    location: location
+    currentUser: principalId
+    customSubDomainName: ''
   }
 }
 
@@ -152,7 +164,7 @@ module src './app/src.bicep' = {
     userAssignedPrincipaLId: uami.outputs.principalId
     currentUserT: currentUserType
     tags: tags
-    openAiEndpoint: openAI.outputs.openAIEndpoint
+    openAiEndpoint: empty(openAIResourceGroupName) ? openAI.outputs.openAIEndpoint : openAIExisting.outputs.openAIEndpoint
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     containerAppsEnvironmentName: appsEnv.outputs.name
     appDefinition: srcDefinition
@@ -163,7 +175,7 @@ module src './app/src.bicep' = {
   scope: rg
 }
 
-output AZURE_OPENAI_ENDPOINT string = openAI.outputs.openAIEndpoint
+output AZURE_OPENAI_ENDPOINT string = empty(openAIResourceGroupName) ? openAI.outputs.openAIEndpoint : openAIExisting.outputs.openAIEndpoint
 output POOL_MANAGEMENT_ENDPOINT string = src.outputs.pool_endpoint
 output AZURE_RESOURCE_GROUP string = rg.name
 output AZURE_TENANT_ID string = subscription().tenantId
