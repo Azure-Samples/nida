@@ -1,10 +1,9 @@
-targetScope = 'resourceGroup'
 
 param openAIName string = ''
-param location string
+param location string = resourceGroup().location
 param customSubDomainName string
 param currentUser string
-param azureOpenaiResourceName string = 'nida'
+param azureOpenaiResourceName string = 'nidaa'
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
@@ -105,7 +104,7 @@ name: azureOpenAiEmbedding
     model: {
       name: azureOpenAiEmbedding
       format: 'OpenAI'
-      version: '2'
+      version: '1'
     }
     versionUpgradeOption: 'OnceCurrentVersionExpired'
   }

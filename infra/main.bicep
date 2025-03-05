@@ -90,13 +90,13 @@ module uami './modules/uami.bicep' = {
 
 module openAI './modules/openAI.bicep' = {
   name: 'openAI'
-  scope: empty(openAIResourceGroupName) ? rg: resourceGroup(openAIResourceGroupName)
+  scope: rg
   params: {
     openAIName: openAIName
     userAssignedIdentityPrincipalId: uami.outputs.principalId
     location: location
     currentUser: principalId
-    customSubDomainName: 'nida-${resourceToken}'
+    customSubDomainName: 'nidaa-${resourceToken}'
   }
 }
 
