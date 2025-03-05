@@ -34,13 +34,11 @@ var tags = {
   'azd-env-name': environmentName
 }
 
-@minLength(1)
 @description('Name of the Azure OpenAI resource')
-param openAIName string
+param openAIName string = ''
 
-@minLength(1)
 @description('Name of the Azure Resource Group where the OpenAI resource is located')
-param openAIResourceGroupName string
+param openAIResourceGroupName string = ''
 
 param runningOnGh string =''
 var currentUserType = empty(runningOnGh) ? 'User' : 'ServicePrincipal'
@@ -92,7 +90,7 @@ module uami './modules/uami.bicep' = {
 
 module openAI './modules/openAI.bicep' = {
   name: 'openAI'
-  scope: resourceGroup(openAIResourceGroupName)
+  scope: empty(openAIResourceGroupName) ? rg: resourceGroup(openAIResourceGroupName)
   params: {
     openAIName: openAIName
     userAssignedIdentityPrincipalId: uami.outputs.principalId
