@@ -8,7 +8,7 @@ param azureOpenaiResourceName string = 'nida'
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
 param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
-param azureOpenAiEmbedding string = 'gpt-4o-embedding'
+param azureOpenAiEmbedding string = 'text-embedding-3-large'
 param userAssignedIdentityPrincipalId string
 
 // Determine if we need to create a new OpenAI resource

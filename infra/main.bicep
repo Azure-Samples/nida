@@ -97,6 +97,7 @@ module openAI './modules/openAI.bicep' = {
     openAIName: openAIName
     userAssignedIdentityPrincipalId: uami.outputs.principalId
     location: location
+    currentUser: principalId
     customSubDomainName: 'nida-${resourceToken}'
   }
 }
