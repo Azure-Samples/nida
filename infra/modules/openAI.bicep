@@ -20,7 +20,7 @@ resource openAIExisting 'Microsoft.CognitiveServices/accounts@2022-03-01' existi
 }
 
 // If openAIName is empty, create a new OpenAI resource.
-resource OpenAICreate 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
+resource OpenAICreate 'Microsoft.CognitiveServices/accounts@2024-10-01' = if(createOpenAI)  {
   name: azureOpenaiResourceName
   location: location
   sku: {
@@ -110,7 +110,6 @@ name: azureOpenAiEmbedding
     versionUpgradeOption: 'OnceCurrentVersionExpired'
   }
 }
-
 
 
 // Use a conditional expression to select the resource reference for further operations.
