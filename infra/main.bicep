@@ -92,7 +92,7 @@ module openAI './modules/openAI.bicep' = if(empty(openAIResourceGroupName)) {
   name: 'openAI'
   scope: rg 
   params: {
-    openAIName: openAIName
+    openAIName: ''
     userAssignedIdentityPrincipalId: uami.outputs.principalId
     location: location
     currentUser: principalId
