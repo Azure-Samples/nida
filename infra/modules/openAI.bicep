@@ -3,6 +3,7 @@ targetScope = 'resourceGroup'
 param openAIName string = ''
 param location string
 param customSubDomainName string
+param currentUser string
 param azureOpenaiResourceName string = 'nida'
 param azureOpenaiDeploymentName string = 'gpt-4o'
 param azureWhisperDeploymentName string = 'whisper'
@@ -126,6 +127,20 @@ resource openAIRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
     principalType: 'ServicePrincipal'
   }
 }
+
+resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(
+    createOpenAI ? OpenAICreate.id : openAIExisting.id, 
+    currentUser, 
+    'Cognitive Services OpenAI User'
+  )
+  scope: createOpenAI ? OpenAICreate : openAIExisting
+  properties: {
+    principalId: currentUser
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+  }
+} 
+
 
 // Output the endpoint from whichever resource is used.
 output openAIEndpoint string = createOpenAI ? OpenAICreate.properties.endpoint : openAIExisting.properties.endpoint
