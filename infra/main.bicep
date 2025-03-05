@@ -35,10 +35,10 @@ var tags = {
 }
 
 @description('Name of the Azure OpenAI resource')
-param openAIName string = ''
+param openAIName string
 
 @description('Name of the Azure Resource Group where the OpenAI resource is located')
-param openAIResourceGroupName string = ''
+param openAIResourceGroupName string
 
 param runningOnGh string =''
 var currentUserType = empty(runningOnGh) ? 'User' : 'ServicePrincipal'
