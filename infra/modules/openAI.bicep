@@ -126,13 +126,13 @@ resource openAIRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
   }
 }
 
-resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (createOpenAI) {
   name: guid(
-    createOpenAI ? OpenAICreate.id : openAIExisting.id, 
+    OpenAICreate.id , 
     currentUser, 
     'Cognitive Services OpenAI User'
   )
-  scope: createOpenAI ? OpenAICreate : openAIExisting
+  scope: OpenAICreate
   properties: {
     principalId: currentUser
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
