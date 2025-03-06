@@ -42,7 +42,7 @@ param openAIResourceGroupName string
 
 param runningOnGh string =''
 var currentUserType = empty(runningOnGh) ? 'User' : 'ServicePrincipal'
-
+var createOpenAI = empty(openAIName)
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(rg.id, environmentName, location))
@@ -88,27 +88,29 @@ module uami './modules/uami.bicep' = {
   }
 }
 
-module openAI './modules/openAI.bicep' = if(empty(openAIResourceGroupName)) {
+module openAI './modules/openAI.bicep' = if(createOpenAI) {
   name: 'openAI'
   scope: rg 
   params: {
-    openAIName: ''
     userAssignedIdentityPrincipalId: uami.outputs.principalId
-    location: location
     currentUser: principalId
     customSubDomainName: 'nidaa-${resourceToken}'
   }
 }
 
-module openAIExisting './modules/openAI.bicep' = if(!empty(openAIResourceGroupName)) {
-  name: 'openAIExisting'
-  scope: resourceGroup(openAIResourceGroupName) 
-  params: {
-    openAIName: openAIName
-    userAssignedIdentityPrincipalId: uami.outputs.principalId
-    location: location
-    currentUser: principalId
-    customSubDomainName: ''
+// If openAIName is provided, reference the existing resource
+resource openAIExisting 'Microsoft.CognitiveServices/accounts@2022-03-01' existing = if(!createOpenAI) {
+  scope: resourceGroup(openAIResourceGroupName)
+  name: openAIName
+}
+
+resource openAIRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = if(!createOpenAI) {
+  name: guid(openAIExisting.id, openAIExisting.id, 'Cognitive Services OpenAI User')
+  
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+    principalId: uami.outputs.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -151,7 +153,6 @@ module searchModule './modules/search.bicep' = {
 }
 
 
-
 module src './app/src.bicep' = {
   name: 'nida'
   params: {
@@ -164,7 +165,7 @@ module src './app/src.bicep' = {
     userAssignedPrincipaLId: uami.outputs.principalId
     currentUserT: currentUserType
     tags: tags
-    openAiEndpoint: empty(openAIResourceGroupName) ? openAI.outputs.openAIEndpoint : openAIExisting.outputs.openAIEndpoint
+    openAiEndpoint: createOpenAI ? openAI.outputs.openAIEndpoint : openAIExisting.properties.endpoint
     applicationInsightsName: monitoring.outputs.applicationInsightsName
     containerAppsEnvironmentName: appsEnv.outputs.name
     appDefinition: srcDefinition
@@ -175,7 +176,7 @@ module src './app/src.bicep' = {
   scope: rg
 }
 
-output AZURE_OPENAI_ENDPOINT string = empty(openAIResourceGroupName) ? openAI.outputs.openAIEndpoint : openAIExisting.outputs.openAIEndpoint
+output AZURE_OPENAI_ENDPOINT string = createOpenAI ? openAI.outputs.openAIEndpoint : openAIExisting.properties.endpoint
 output POOL_MANAGEMENT_ENDPOINT string = src.outputs.pool_endpoint
 output AZURE_RESOURCE_GROUP string = rg.name
 output AZURE_TENANT_ID string = subscription().tenantId

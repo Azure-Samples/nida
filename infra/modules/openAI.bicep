@@ -1,5 +1,4 @@
 
-param openAIName string = ''
 param location string = resourceGroup().location
 param customSubDomainName string
 param currentUser string
@@ -10,16 +9,7 @@ param azureOpenaiAudioDeploymentName string = 'gpt-4o-audio-preview'
 param azureOpenAiEmbedding string = 'text-embedding-3-large'
 param userAssignedIdentityPrincipalId string
 
-// Determine if we need to create a new OpenAI resource
-var createOpenAI = empty(openAIName)
-
-// If openAIName is provided, reference the existing resource
-resource openAIExisting 'Microsoft.CognitiveServices/accounts@2022-03-01' existing = if(!createOpenAI) {
-  name: openAIName
-}
-
-// If openAIName is empty, create a new OpenAI resource.
-resource OpenAICreate 'Microsoft.CognitiveServices/accounts@2024-10-01' = if(createOpenAI)  {
+resource OpenAICreate 'Microsoft.CognitiveServices/accounts@2024-10-01' =  {
   name: azureOpenaiResourceName
   location: location
   sku: {
@@ -32,7 +22,7 @@ resource OpenAICreate 'Microsoft.CognitiveServices/accounts@2024-10-01' = if(cre
 }
 
 // Define the OpenAI deployment
-resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = if(createOpenAI) {
+resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   name: azureOpenaiDeploymentName
   parent: OpenAICreate
   sku: {
@@ -51,7 +41,7 @@ resource openaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024
 
 // Define the Whisper deployment
 // putting dependency on openai deployment just so that they deploy sequentially
-resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = if(createOpenAI) {
+resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   name: azureWhisperDeploymentName
   parent: OpenAICreate
   dependsOn: [ openaideployment ]
@@ -72,7 +62,7 @@ resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@202
 
 // Define the OpenAI deployment
 // putting dependency on whisper deployment just so that they deploy sequentially
-resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = if(createOpenAI) {
+resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   name: azureOpenaiAudioDeploymentName
   parent: OpenAICreate
   dependsOn: [ whisperDeployment ]
@@ -92,7 +82,7 @@ resource audioDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
 
   // Define the OpenAI deployment
 // putting dependency on whisper deployment just so that they deploy sequentially
-resource embeddingDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = if(createOpenAI) {
+resource embeddingDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' =  {
 name: azureOpenAiEmbedding
   parent: OpenAICreate
   dependsOn: [ audioDeployment ]
@@ -114,11 +104,11 @@ name: azureOpenAiEmbedding
 // Use a conditional expression to select the resource reference for further operations.
 resource openAIRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: guid(
-    createOpenAI ? OpenAICreate.id : openAIExisting.id, 
+    OpenAICreate.id, 
     userAssignedIdentityPrincipalId, 
     'Cognitive Services OpenAI User'
   )
-  scope: createOpenAI ? OpenAICreate : openAIExisting
+  scope: OpenAICreate 
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
     principalId: userAssignedIdentityPrincipalId
@@ -126,7 +116,7 @@ resource openAIRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-0
   }
 }
 
-resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (createOpenAI) {
+resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' =  {
   name: guid(
     OpenAICreate.id , 
     currentUser, 
@@ -141,4 +131,4 @@ resource userOpenaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-
 
 
 // Output the endpoint from whichever resource is used.
-output openAIEndpoint string = createOpenAI ? OpenAICreate.properties.endpoint : openAIExisting.properties.endpoint
+output openAIEndpoint string = OpenAICreate.properties.endpoint 
